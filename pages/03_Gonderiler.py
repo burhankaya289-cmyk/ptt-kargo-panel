@@ -10,6 +10,56 @@ from reportlab.graphics.barcode import code128
 from database.database import SessionLocal, engine
 from database.models import Base, Shipment
 
+st.set_page_config(layout="wide", initial_sidebar_state="expanded")
+
+st.markdown("""
+<style>
+html, body, [class*="css"] {
+    font-size: 14px !important;
+}
+section[data-testid="stSidebar"] {
+    min-width: 230px !important;
+    max-width: 230px !important;
+}
+button[kind="header"] {
+    display: none !important;
+}
+div[data-testid="stMarkdownContainer"] p {
+    font-size: 14px !important;
+}
+.stButton button {
+    font-size: 13px !important;
+    padding: 0.35rem 0.6rem !important;
+}
+.stDownloadButton button {
+    font-size: 13px !important;
+    padding: 0.35rem 0.6rem !important;
+}
+.status-red {
+    background:#ffe8e8;
+    color:#8a1f1f;
+    padding:6px 8px;
+    border-radius:8px;
+    font-weight:600;
+    font-size:13px;
+    text-align:center;
+}
+.status-green {
+    background:#e8f8ee;
+    color:#18713a;
+    padding:6px 8px;
+    border-radius:8px;
+    font-weight:600;
+    font-size:13px;
+    text-align:center;
+}
+.header-cell {
+    font-weight:700;
+    font-size:13px;
+}
+</style>
+""", unsafe_allow_html=True)
+
 Base.metadata.create_all(bind=engine)
 
 st.title("Gönderiler")
@@ -18,6 +68,12 @@ db = SessionLocal()
 
 if "selected_shipments" not in st.session_state:
     st.session_state.selected_shipments = []
+
+if "pdf_file" not in st.session_state:
+    st.session_state.pdf_file = None
+
+if "pdf_name" not in st.session_state:
+    st.session_state.pdf_name = "etiketler.pdf"
 
 
 def create_excel(shipments):
@@ -65,7 +121,7 @@ def create_pdf(shipments):
         c.setLineWidth(0.4)
         c.rect(1 * mm, 1 * mm, 38 * mm, 48 * mm)
 
-        c.setFont("Helvetica-Bold", 5.5)
+        c.setFont("Helvetica-Bold", 5.3)
         c.drawCentredString(20 * mm, 47 * mm, "PTT GENEL MÜDÜRLÜĞÜ KARGO ETİKETİ")
 
         c.rect(1 * mm, 39 * mm, 24 * mm, 7 * mm)
@@ -73,7 +129,7 @@ def create_pdf(shipments):
 
         c.setFont("Helvetica-Bold", 4)
         c.drawString(2 * mm, 44 * mm, "GÖNDERİCİ")
-        c.setFont("Helvetica", 3.7)
+        c.setFont("Helvetica", 3.6)
         c.drawString(2 * mm, 42 * mm, "Ziraat Katılım Bankası A.Ş.")
         c.drawString(2 * mm, 40 * mm, "Hadımköy Lojistik Merkezi")
 
@@ -86,10 +142,10 @@ def create_pdf(shipments):
         c.setFont("Helvetica-Bold", 4)
         c.drawString(2 * mm, 37 * mm, "ALICI")
 
-        c.setFont("Helvetica-Bold", 4.3)
+        c.setFont("Helvetica-Bold", 4.2)
         c.drawString(2 * mm, 35 * mm, str(item.recipient_name or "")[:38])
 
-        c.setFont("Helvetica", 3.7)
+        c.setFont("Helvetica", 3.6)
         c.drawString(2 * mm, 32 * mm, str(item.address or "")[:45])
         c.drawString(2 * mm, 29 * mm, f"{item.district or ''} / {item.city or ''}"[:45])
 
@@ -108,15 +164,15 @@ def create_pdf(shipments):
         for i in range(4):
             x = 1 * mm + i * box_w
             c.rect(x, box_y, box_w, box_h)
-            c.setFont("Helvetica-Bold", 3.3)
+            c.setFont("Helvetica-Bold", 3.2)
             c.drawString(x + 0.6 * mm, box_y + 3.2 * mm, titles[i])
-            c.setFont("Helvetica", 3.1)
+            c.setFont("Helvetica", 3.0)
             c.drawString(x + 0.6 * mm, box_y + 1.2 * mm, str(values[i])[:12])
 
         c.rect(1 * mm, 16 * mm, 38 * mm, 6 * mm)
         c.setFont("Helvetica-Bold", 4)
         c.drawString(2 * mm, 20 * mm, "ÜRÜN İÇERİĞİ")
-        c.setFont("Helvetica", 4.2)
+        c.setFont("Helvetica", 4.1)
         c.drawString(2 * mm, 17.7 * mm, str(item.product_name or "")[:38])
 
         c.rect(1 * mm, 1 * mm, 38 * mm, 15 * mm)
@@ -195,10 +251,12 @@ top1, top2, top3 = st.columns(3)
 
 with top1:
     if st.button("Seçilenleri Yazdır", use_container_width=True):
-        if selected_items:
-            st.session_state["pdf_ready"] = True
-        else:
+        if not selected_items:
             st.error("Seçili gönderi yok.")
+        else:
+            st.session_state.pdf_file = create_pdf(selected_items)
+            st.session_state.pdf_name = "etiketler.pdf"
+            st.rerun()
 
 with top2:
     if selected_items:
@@ -222,36 +280,34 @@ with top3:
         st.session_state.selected_shipments = []
         st.rerun()
 
-if st.session_state.get("pdf_ready", False):
-    pdf_file = create_pdf(selected_items)
-
+if st.session_state.pdf_file is not None:
     st.download_button(
         "PDF İndir",
-        pdf_file,
-        file_name="etiketler.pdf",
+        st.session_state.pdf_file,
+        file_name=st.session_state.pdf_name,
         mime="application/pdf",
         use_container_width=True,
     )
 
 st.divider()
 
-header = st.columns([0.6, 1.7, 3.5, 3.5, 3, 2, 1.2, 1.2, 1.2])
+header = st.columns([0.5, 1.4, 3.2, 3.2, 2.6, 1.8, 1, 1, 1])
 
-header[0].markdown("**Seç**")
-header[1].markdown("**Durum**")
-header[2].markdown("**Alıcı Adı**")
-header[3].markdown("**Ürün İçeriği**")
-header[4].markdown("**Takip No**")
-header[5].markdown("**Kullanıcı**")
-header[6].markdown("**Detay**")
-header[7].markdown("**PDF**")
-header[8].markdown("**Sil**")
+header[0].markdown('<div class="header-cell">Seç</div>', unsafe_allow_html=True)
+header[1].markdown('<div class="header-cell">Durum</div>', unsafe_allow_html=True)
+header[2].markdown('<div class="header-cell">Alıcı Adı</div>', unsafe_allow_html=True)
+header[3].markdown('<div class="header-cell">Ürün İçeriği</div>', unsafe_allow_html=True)
+header[4].markdown('<div class="header-cell">Takip No</div>', unsafe_allow_html=True)
+header[5].markdown('<div class="header-cell">Kullanıcı</div>', unsafe_allow_html=True)
+header[6].markdown('<div class="header-cell">Detay</div>', unsafe_allow_html=True)
+header[7].markdown('<div class="header-cell">PDF</div>', unsafe_allow_html=True)
+header[8].markdown('<div class="header-cell">Sil</div>', unsafe_allow_html=True)
 
 st.divider()
 
 for item in filtered:
     col0, col1, col2, col3, col4, col5, col6, col7, col8 = st.columns(
-        [0.6, 1.7, 3.5, 3.5, 3, 2, 1.2, 1.2, 1.2]
+        [0.5, 1.4, 3.2, 3.2, 2.6, 1.8, 1, 1, 1]
     )
 
     with col0:
@@ -269,9 +325,9 @@ for item in filtered:
 
     with col1:
         if item.is_printed:
-            st.markdown("🔴 **Yazdırıldı**")
+            st.markdown('<div class="status-red">Yazdırıldı</div>', unsafe_allow_html=True)
         else:
-            st.markdown("🟢 **Yazdırılmadı**")
+            st.markdown('<div class="status-green">Yazdırılmadı</div>', unsafe_allow_html=True)
 
     with col2:
         st.write(str(item.recipient_name or "")[:45])
@@ -294,15 +350,9 @@ for item in filtered:
 
     with col7:
         if st.button("PDF", key=f"pdf_{item.id}"):
-            pdf_file = create_pdf([item])
-
-            st.download_button(
-                "İndir",
-                pdf_file,
-                file_name=f"etiket_{item.tracking_number}.pdf",
-                mime="application/pdf",
-                key=f"indir_{item.id}",
-            )
+            st.session_state.pdf_file = create_pdf([item])
+            st.session_state.pdf_name = f"etiket_{item.tracking_number}.pdf"
+            st.rerun()
 
     with col8:
         if st.button("Sil", key=f"sil_{item.id}"):
