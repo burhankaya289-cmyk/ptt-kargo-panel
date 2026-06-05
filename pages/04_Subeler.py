@@ -1,3 +1,14 @@
+uploaded_file = st.file_uploader(
+    "Excel Yükle",
+    type=["xlsx"]
+)
+if uploaded_file:
+
+    import pandas as pd
+
+    df = pd.read_excel(uploaded_file)
+
+    st.dataframe(df)
 import streamlit as st
 
 from database.database import SessionLocal
