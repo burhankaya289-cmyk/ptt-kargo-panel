@@ -131,13 +131,13 @@ else:
         st.rerun()
 
     pages = [
-        st.Page("views/08_Dashboard.py", title="Dashboard", icon="📊"),
+    
         st.Page("views/02_Gonderi_Olustur.py", title="Gönderi Oluştur", icon="📦"),
         st.Page("views/03_Gonderiler.py", title="Gönderiler", icon="📋"),
         st.Page("views/04_Subeler.py", title="Şubeler", icon="🏢"),
         st.Page("views/06_Barkodlar.py", title="Barkodlar", icon="🏷️"),
         st.Page("views/05_Urun_Olculeri.py", title="Ürün Ölçüleri", icon="📐"),
-        st.Page("views/12_Yedekleme.py", title="Yedekleme", icon="💾"),
+    
     ]
 
     if st.session_state.role == "Admin":
