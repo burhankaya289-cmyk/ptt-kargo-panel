@@ -1,5 +1,7 @@
 import streamlit as st
+from utils.auth import require_login
 
+require_login()
 from database.database import SessionLocal, engine
 from database.models import Base, Branch, ProductDimension, Barcode, Shipment
 
