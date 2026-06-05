@@ -14,48 +14,70 @@ st.set_page_config(layout="wide", initial_sidebar_state="expanded")
 
 st.markdown("""
 <style>
-html, body, [class*="css"] {
-    font-size: 14px !important;
+html, body, div, span, p, label, input, textarea, button {
+    font-size: 12px !important;
+}
+.block-container {
+    padding-top: 1rem !important;
+    padding-left: 1.2rem !important;
+    padding-right: 1.2rem !important;
+    max-width: 100% !important;
+}
+h1 {
+    font-size: 22px !important;
+    margin-bottom: 8px !important;
+}
+h2, h3 {
+    font-size: 15px !important;
 }
 section[data-testid="stSidebar"] {
-    min-width: 230px !important;
-    max-width: 230px !important;
+    min-width: 220px !important;
+    max-width: 220px !important;
+}
+section[data-testid="stSidebar"] * {
+    font-size: 12px !important;
 }
 button[kind="header"] {
     display: none !important;
 }
+.stButton button,
+.stDownloadButton button,
+button {
+    font-size: 12px !important;
+    padding: 0.22rem 0.45rem !important;
+    min-height: 28px !important;
+}
+.stTextInput input,
+.stTextArea textarea,
+.stNumberInput input,
+.stSelectbox div {
+    font-size: 12px !important;
+}
 div[data-testid="stMarkdownContainer"] p {
-    font-size: 14px !important;
-}
-.stButton button {
-    font-size: 13px !important;
-    padding: 0.35rem 0.6rem !important;
-}
-.stDownloadButton button {
-    font-size: 13px !important;
-    padding: 0.35rem 0.6rem !important;
+    font-size: 12px !important;
+    margin-bottom: 0.2rem !important;
 }
 .status-red {
     background:#ffe8e8;
     color:#8a1f1f;
-    padding:6px 8px;
-    border-radius:8px;
+    padding:5px 6px;
+    border-radius:6px;
     font-weight:600;
-    font-size:13px;
+    font-size:12px;
     text-align:center;
 }
 .status-green {
     background:#e8f8ee;
     color:#18713a;
-    padding:6px 8px;
-    border-radius:8px;
+    padding:5px 6px;
+    border-radius:6px;
     font-weight:600;
-    font-size:13px;
+    font-size:12px;
     text-align:center;
 }
-.header-cell {
-    font-weight:700;
-    font-size:13px;
+hr {
+    margin-top: 0.5rem !important;
+    margin-bottom: 0.5rem !important;
 }
 </style>
 """, unsafe_allow_html=True)
@@ -74,6 +96,13 @@ if "pdf_file" not in st.session_state:
 
 if "pdf_name" not in st.session_state:
     st.session_state.pdf_name = "etiketler.pdf"
+
+
+def kisalt(text, limit):
+    text = str(text or "")
+    if len(text) <= limit:
+        return text
+    return text[:limit]
 
 
 def create_excel(shipments):
@@ -110,47 +139,92 @@ def create_excel(shipments):
     return output
 
 
+def draw_wrapped(c, text, x, y, max_chars, max_lines, font="Helvetica", size=3.5, line_gap=3.2):
+    text = str(text or "").strip()
+    lines = []
+
+    while text:
+        lines.append(text[:max_chars])
+        text = text[max_chars:]
+
+    c.setFont(font, size)
+
+    for line in lines[:max_lines]:
+        c.drawString(x, y, line)
+        y -= line_gap * mm
+
+
 def create_pdf(shipments):
     output = BytesIO()
+
     page_width = 40 * mm
     page_height = 50 * mm
 
     c = canvas.Canvas(output, pagesize=(page_width, page_height))
 
     for item in shipments:
-        c.setLineWidth(0.4)
+        c.setLineWidth(0.35)
+
         c.rect(1 * mm, 1 * mm, 38 * mm, 48 * mm)
 
-        c.setFont("Helvetica-Bold", 5.3)
-        c.drawCentredString(20 * mm, 47 * mm, "PTT GENEL MÜDÜRLÜĞÜ KARGO ETİKETİ")
+        c.setFont("Helvetica-Bold", 4.8)
+        c.drawCentredString(
+            20 * mm,
+            47.2 * mm,
+            "PTT GENEL MÜDÜRLÜĞÜ KARGO ETİKETİ"
+        )
 
-        c.rect(1 * mm, 39 * mm, 24 * mm, 7 * mm)
-        c.rect(25 * mm, 39 * mm, 14 * mm, 7 * mm)
+        c.rect(1 * mm, 39.5 * mm, 25 * mm, 6.8 * mm)
+        c.rect(26 * mm, 39.5 * mm, 13 * mm, 6.8 * mm)
 
-        c.setFont("Helvetica-Bold", 4)
-        c.drawString(2 * mm, 44 * mm, "GÖNDERİCİ")
-        c.setFont("Helvetica", 3.6)
-        c.drawString(2 * mm, 42 * mm, "Ziraat Katılım Bankası A.Ş.")
-        c.drawString(2 * mm, 40 * mm, "Hadımköy Lojistik Merkezi")
+        c.setFont("Helvetica-Bold", 3.4)
+        c.drawString(2 * mm, 44.4 * mm, "GÖNDERİCİ")
+        c.setFont("Helvetica", 3.15)
+        c.drawString(2 * mm, 42.6 * mm, "Ziraat Katılım Bankası A.Ş.")
+        c.drawString(2 * mm, 40.9 * mm, "Hadımköy Lojistik Merkezi")
 
-        c.setFont("Helvetica-Bold", 4)
-        c.drawString(26 * mm, 44 * mm, "PTT KABUL")
-        c.drawString(26 * mm, 42 * mm, "MERKEZİ")
+        c.setFont("Helvetica-Bold", 3.4)
+        c.drawString(27 * mm, 44.2 * mm, "PTT KABUL")
+        c.drawString(27 * mm, 42.2 * mm, "MERKEZİ")
 
-        c.rect(1 * mm, 27 * mm, 38 * mm, 12 * mm)
+        c.rect(1 * mm, 27 * mm, 38 * mm, 12.5 * mm)
 
-        c.setFont("Helvetica-Bold", 4)
-        c.drawString(2 * mm, 37 * mm, "ALICI")
+        c.setFont("Helvetica-Bold", 3.5)
+        c.drawString(2 * mm, 37.6 * mm, "ALICI")
 
-        c.setFont("Helvetica-Bold", 4.2)
-        c.drawString(2 * mm, 35 * mm, str(item.recipient_name or "")[:38])
+        draw_wrapped(
+            c,
+            item.recipient_name,
+            2 * mm,
+            35.7 * mm,
+            max_chars=34,
+            max_lines=1,
+            font="Helvetica-Bold",
+            size=3.8,
+            line_gap=2.8
+        )
 
-        c.setFont("Helvetica", 3.6)
-        c.drawString(2 * mm, 32 * mm, str(item.address or "")[:45])
-        c.drawString(2 * mm, 29 * mm, f"{item.district or ''} / {item.city or ''}"[:45])
+        draw_wrapped(
+            c,
+            item.address,
+            2 * mm,
+            33.2 * mm,
+            max_chars=42,
+            max_lines=2,
+            font="Helvetica",
+            size=3.2,
+            line_gap=2.6
+        )
 
-        box_y = 22 * mm
-        box_h = 5 * mm
+        c.setFont("Helvetica", 3.2)
+        c.drawString(
+            2 * mm,
+            28.1 * mm,
+            kisalt(f"{item.district or ''} / {item.city or ''}", 42)
+        )
+
+        box_y = 21.8 * mm
+        box_h = 5.2 * mm
         box_w = 9.5 * mm
 
         titles = ["TARİH", "ÖLÇÜ", "AĞIRLIK", "ŞUBE"]
@@ -164,25 +238,35 @@ def create_pdf(shipments):
         for i in range(4):
             x = 1 * mm + i * box_w
             c.rect(x, box_y, box_w, box_h)
-            c.setFont("Helvetica-Bold", 3.2)
-            c.drawString(x + 0.6 * mm, box_y + 3.2 * mm, titles[i])
-            c.setFont("Helvetica", 3.0)
-            c.drawString(x + 0.6 * mm, box_y + 1.2 * mm, str(values[i])[:12])
+            c.setFont("Helvetica-Bold", 2.9)
+            c.drawCentredString(x + (box_w / 2), box_y + 3.5 * mm, titles[i])
+            c.setFont("Helvetica", 2.8)
+            c.drawCentredString(x + (box_w / 2), box_y + 1.2 * mm, kisalt(values[i], 11))
 
-        c.rect(1 * mm, 16 * mm, 38 * mm, 6 * mm)
-        c.setFont("Helvetica-Bold", 4)
-        c.drawString(2 * mm, 20 * mm, "ÜRÜN İÇERİĞİ")
-        c.setFont("Helvetica", 4.1)
-        c.drawString(2 * mm, 17.7 * mm, str(item.product_name or "")[:38])
+        c.rect(1 * mm, 15.8 * mm, 38 * mm, 6 * mm)
+        c.setFont("Helvetica-Bold", 3.5)
+        c.drawString(2 * mm, 19.8 * mm, "ÜRÜN İÇERİĞİ")
+        c.setFont("Helvetica", 3.8)
+        c.drawString(2 * mm, 17.4 * mm, kisalt(item.product_name, 38))
 
-        c.rect(1 * mm, 1 * mm, 38 * mm, 15 * mm)
+        c.rect(1 * mm, 1 * mm, 38 * mm, 14.8 * mm)
 
         barcode_value = str(item.tracking_number or item.barcode or "")
-        barcode = code128.Code128(barcode_value, barHeight=7 * mm, barWidth=0.35)
-        barcode.drawOn(c, 4 * mm, 6 * mm)
 
-        c.setFont("Helvetica-Bold", 5)
-        c.drawCentredString(20 * mm, 3 * mm, barcode_value)
+        barcode = code128.Code128(
+            barcode_value,
+            barHeight=7.2 * mm,
+            barWidth=0.31
+        )
+
+        barcode.drawOn(c, 4.2 * mm, 6.2 * mm)
+
+        c.setFont("Helvetica-Bold", 4.7)
+        c.drawCentredString(
+            20 * mm,
+            3.2 * mm,
+            barcode_value
+        )
 
         item.is_printed = True
         c.showPage()
@@ -190,6 +274,7 @@ def create_pdf(shipments):
     db.commit()
     c.save()
     output.seek(0)
+
     return output
 
 
@@ -261,6 +346,7 @@ with top1:
 with top2:
     if selected_items:
         excel_file = create_excel(selected_items)
+
         st.download_button(
             "Seçilenleri Excele Aktar",
             excel_file,
@@ -293,15 +379,15 @@ st.divider()
 
 header = st.columns([0.5, 1.4, 3.2, 3.2, 2.6, 1.8, 1, 1, 1])
 
-header[0].markdown('<div class="header-cell">Seç</div>', unsafe_allow_html=True)
-header[1].markdown('<div class="header-cell">Durum</div>', unsafe_allow_html=True)
-header[2].markdown('<div class="header-cell">Alıcı Adı</div>', unsafe_allow_html=True)
-header[3].markdown('<div class="header-cell">Ürün İçeriği</div>', unsafe_allow_html=True)
-header[4].markdown('<div class="header-cell">Takip No</div>', unsafe_allow_html=True)
-header[5].markdown('<div class="header-cell">Kullanıcı</div>', unsafe_allow_html=True)
-header[6].markdown('<div class="header-cell">Detay</div>', unsafe_allow_html=True)
-header[7].markdown('<div class="header-cell">PDF</div>', unsafe_allow_html=True)
-header[8].markdown('<div class="header-cell">Sil</div>', unsafe_allow_html=True)
+header[0].markdown("**Seç**")
+header[1].markdown("**Durum**")
+header[2].markdown("**Alıcı Adı**")
+header[3].markdown("**Ürün İçeriği**")
+header[4].markdown("**Takip No**")
+header[5].markdown("**Kullanıcı**")
+header[6].markdown("**Detay**")
+header[7].markdown("**PDF**")
+header[8].markdown("**Sil**")
 
 st.divider()
 
@@ -330,10 +416,10 @@ for item in filtered:
             st.markdown('<div class="status-green">Yazdırılmadı</div>', unsafe_allow_html=True)
 
     with col2:
-        st.write(str(item.recipient_name or "")[:45])
+        st.write(kisalt(item.recipient_name, 45))
 
     with col3:
-        st.write(str(item.product_name or "")[:45])
+        st.write(kisalt(item.product_name, 45))
 
     with col4:
         st.write(str(item.tracking_number or ""))
@@ -344,7 +430,8 @@ for item in filtered:
     with col6:
         if st.button("Detay", key=f"detay_{item.id}"):
             st.session_state[f"detay_{item.id}"] = not st.session_state.get(
-                f"detay_{item.id}", False
+                f"detay_{item.id}",
+                False
             )
             st.rerun()
 
