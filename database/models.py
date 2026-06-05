@@ -1,5 +1,5 @@
 from sqlalchemy.orm import DeclarativeBase
-from sqlalchemy import Column,Integer,String,Float,Boolean
+from sqlalchemy import Column, Integer, String, Float, Boolean
 
 
 class Base(DeclarativeBase):
@@ -49,6 +49,8 @@ class Shipment(Base):
 
     barcode = Column(String)
 
+    tracking_number = Column(String)
+
     branch_code = Column(String)
     branch_name = Column(String)
 
@@ -67,4 +69,6 @@ class Shipment(Base):
     height = Column(Float)
     weight = Column(Float)
 
-    print_status = Column(String)
+    created_by = Column(String)
+
+    is_printed = Column(Boolean, default=False)
