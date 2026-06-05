@@ -1,5 +1,8 @@
 import streamlit as st
 import pandas as pd
+from utils.auth import require_login
+
+require_login()
 from io import BytesIO
 from datetime import datetime
 
