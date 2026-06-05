@@ -12,8 +12,6 @@ from database.models import Base, Shipment
 
 Base.metadata.create_all(bind=engine)
 
-st.set_page_config(layout="wide")
-
 st.title("Gönderiler")
 
 db = SessionLocal()
@@ -47,56 +45,28 @@ def create_excel(shipments):
             "R": "",
             "S": item.width,
             "T": item.length,
-            "U": item.height
+            "U": item.height,
         })
 
     output = BytesIO()
-    df = pd.DataFrame(rows)
-    df.to_excel(output, index=False)
+    pd.DataFrame(rows).to_excel(output, index=False)
     output.seek(0)
-
     return output
-
-
-def draw_text(c, text, x, y, max_chars=36, font="Helvetica", size=5):
-    text = str(text or "")
-    lines = []
-
-    while len(text) > max_chars:
-        lines.append(text[:max_chars])
-        text = text[max_chars:]
-
-    lines.append(text)
-
-    c.setFont(font, size)
-
-    for line in lines[:3]:
-        c.drawString(x, y, line)
-        y -= 6
 
 
 def create_pdf(shipments):
     output = BytesIO()
-
     page_width = 40 * mm
     page_height = 50 * mm
 
-    c = canvas.Canvas(
-        output,
-        pagesize=(page_width, page_height)
-    )
+    c = canvas.Canvas(output, pagesize=(page_width, page_height))
 
     for item in shipments:
         c.setLineWidth(0.4)
-
         c.rect(1 * mm, 1 * mm, 38 * mm, 48 * mm)
 
         c.setFont("Helvetica-Bold", 5.5)
-        c.drawCentredString(
-            20 * mm,
-            47 * mm,
-            "PTT GENEL MÜDÜRLÜĞÜ KARGO ETİKETİ"
-        )
+        c.drawCentredString(20 * mm, 47 * mm, "PTT GENEL MÜDÜRLÜĞÜ KARGO ETİKETİ")
 
         c.rect(1 * mm, 39 * mm, 24 * mm, 7 * mm)
         c.rect(25 * mm, 39 * mm, 14 * mm, 7 * mm)
@@ -116,32 +86,12 @@ def create_pdf(shipments):
         c.setFont("Helvetica-Bold", 4)
         c.drawString(2 * mm, 37 * mm, "ALICI")
 
-        draw_text(
-            c,
-            item.recipient_name,
-            2 * mm,
-            35 * mm,
-            max_chars=32,
-            font="Helvetica-Bold",
-            size=4.5
-        )
-
-        draw_text(
-            c,
-            item.address,
-            2 * mm,
-            31 * mm,
-            max_chars=38,
-            font="Helvetica",
-            size=3.7
-        )
+        c.setFont("Helvetica-Bold", 4.3)
+        c.drawString(2 * mm, 35 * mm, str(item.recipient_name or "")[:38])
 
         c.setFont("Helvetica", 3.7)
-        c.drawString(
-            2 * mm,
-            28 * mm,
-            f"{item.district or ''} / {item.city or ''}"
-        )
+        c.drawString(2 * mm, 32 * mm, str(item.address or "")[:45])
+        c.drawString(2 * mm, 29 * mm, f"{item.district or ''} / {item.city or ''}"[:45])
 
         box_y = 22 * mm
         box_h = 5 * mm
@@ -152,16 +102,16 @@ def create_pdf(shipments):
             datetime.now().strftime("%d.%m.%Y"),
             f"{item.width}x{item.length}x{item.height}",
             f"{item.weight} gr",
-            item.branch_code or ""
+            item.branch_code or "",
         ]
 
         for i in range(4):
             x = 1 * mm + i * box_w
             c.rect(x, box_y, box_w, box_h)
-            c.setFont("Helvetica-Bold", 3.4)
-            c.drawString(x + 0.8 * mm, box_y + 3.1 * mm, titles[i])
-            c.setFont("Helvetica", 3.3)
-            c.drawString(x + 0.8 * mm, box_y + 1.2 * mm, str(values[i])[:12])
+            c.setFont("Helvetica-Bold", 3.3)
+            c.drawString(x + 0.6 * mm, box_y + 3.2 * mm, titles[i])
+            c.setFont("Helvetica", 3.1)
+            c.drawString(x + 0.6 * mm, box_y + 1.2 * mm, str(values[i])[:12])
 
         c.rect(1 * mm, 16 * mm, 38 * mm, 6 * mm)
         c.setFont("Helvetica-Bold", 4)
@@ -172,31 +122,18 @@ def create_pdf(shipments):
         c.rect(1 * mm, 1 * mm, 38 * mm, 15 * mm)
 
         barcode_value = str(item.tracking_number or item.barcode or "")
-
-        barcode = code128.Code128(
-            barcode_value,
-            barHeight=7 * mm,
-            barWidth=0.35
-        )
-
+        barcode = code128.Code128(barcode_value, barHeight=7 * mm, barWidth=0.35)
         barcode.drawOn(c, 4 * mm, 6 * mm)
 
         c.setFont("Helvetica-Bold", 5)
-        c.drawCentredString(
-            20 * mm,
-            3 * mm,
-            barcode_value
-        )
+        c.drawCentredString(20 * mm, 3 * mm, barcode_value)
 
         item.is_printed = True
-
         c.showPage()
 
     db.commit()
     c.save()
-
     output.seek(0)
-
     return output
 
 
@@ -214,20 +151,9 @@ with col3:
 with col4:
     filtre_kullanici = st.text_input("Kullanıcı Adı")
 
-durum = st.selectbox(
-    "Durum",
-    [
-        "Tümü",
-        "Yazdırılmadı",
-        "Yazdırıldı"
-    ]
-)
+durum = st.selectbox("Durum", ["Tümü", "Yazdırılmadı", "Yazdırıldı"])
 
-gonderiler = (
-    db.query(Shipment)
-    .order_by(Shipment.id.desc())
-    .all()
-)
+gonderiler = db.query(Shipment).order_by(Shipment.id.desc()).all()
 
 filtered = []
 
@@ -257,13 +183,59 @@ st.write(f"Toplam Kayıt: {len(filtered)}")
 tumunu_sec = st.checkbox("Tümünü Seç")
 
 if tumunu_sec:
-    st.session_state.selected_shipments = [
-        item.id for item in filtered
-    ]
+    st.session_state.selected_shipments = [item.id for item in filtered]
+
+selected_items = (
+    db.query(Shipment)
+    .filter(Shipment.id.in_(st.session_state.selected_shipments))
+    .all()
+)
+
+top1, top2, top3 = st.columns(3)
+
+with top1:
+    if st.button("Seçilenleri Yazdır", use_container_width=True):
+        if selected_items:
+            st.session_state["pdf_ready"] = True
+        else:
+            st.error("Seçili gönderi yok.")
+
+with top2:
+    if selected_items:
+        excel_file = create_excel(selected_items)
+        st.download_button(
+            "Seçilenleri Excele Aktar",
+            excel_file,
+            file_name="gonderiler.xlsx",
+            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            use_container_width=True,
+        )
+    else:
+        st.button("Seçilenleri Excele Aktar", use_container_width=True, disabled=True)
+
+with top3:
+    if st.button("Seçilenleri Sil", use_container_width=True):
+        for item in selected_items:
+            db.delete(item)
+
+        db.commit()
+        st.session_state.selected_shipments = []
+        st.rerun()
+
+if st.session_state.get("pdf_ready", False):
+    pdf_file = create_pdf(selected_items)
+
+    st.download_button(
+        "PDF İndir",
+        pdf_file,
+        file_name="etiketler.pdf",
+        mime="application/pdf",
+        use_container_width=True,
+    )
 
 st.divider()
 
-header = st.columns([0.6, 1.8, 3.2, 3.2, 3, 2, 1.2, 1.2, 1.2])
+header = st.columns([0.6, 1.7, 3.5, 3.5, 3, 2, 1.2, 1.2, 1.2])
 
 header[0].markdown("**Seç**")
 header[1].markdown("**Durum**")
@@ -279,14 +251,14 @@ st.divider()
 
 for item in filtered:
     col0, col1, col2, col3, col4, col5, col6, col7, col8 = st.columns(
-        [0.6, 1.8, 3.2, 3.2, 3, 2, 1.2, 1.2, 1.2]
+        [0.6, 1.7, 3.5, 3.5, 3, 2, 1.2, 1.2, 1.2]
     )
 
     with col0:
         secili = st.checkbox(
             "",
             value=item.id in st.session_state.selected_shipments,
-            key=f"sec_{item.id}"
+            key=f"sec_{item.id}",
         )
 
         if secili and item.id not in st.session_state.selected_shipments:
@@ -302,10 +274,10 @@ for item in filtered:
             st.markdown("🟢 **Yazdırılmadı**")
 
     with col2:
-        st.write(str(item.recipient_name or "")[:40])
+        st.write(str(item.recipient_name or "")[:45])
 
     with col3:
-        st.write(str(item.product_name or "")[:40])
+        st.write(str(item.product_name or "")[:45])
 
     with col4:
         st.write(str(item.tracking_number or ""))
@@ -316,32 +288,27 @@ for item in filtered:
     with col6:
         if st.button("Detay", key=f"detay_{item.id}"):
             st.session_state[f"detay_{item.id}"] = not st.session_state.get(
-                f"detay_{item.id}",
-                False
+                f"detay_{item.id}", False
             )
             st.rerun()
 
     with col7:
-        if st.button("PDF", key=f"yazdir_{item.id}"):
-            st.session_state[f"pdf_single_{item.id}"] = True
-            st.rerun()
+        if st.button("PDF", key=f"pdf_{item.id}"):
+            pdf_file = create_pdf([item])
+
+            st.download_button(
+                "İndir",
+                pdf_file,
+                file_name=f"etiket_{item.tracking_number}.pdf",
+                mime="application/pdf",
+                key=f"indir_{item.id}",
+            )
 
     with col8:
         if st.button("Sil", key=f"sil_{item.id}"):
             db.delete(item)
             db.commit()
             st.rerun()
-
-    if st.session_state.get(f"pdf_single_{item.id}", False):
-        pdf = create_pdf([item])
-
-        st.download_button(
-            "PDF İndir",
-            pdf,
-            file_name=f"etiket_{item.tracking_number}.pdf",
-            mime="application/pdf",
-            key=f"indir_{item.id}"
-        )
 
     if st.session_state.get(f"detay_{item.id}", False):
         with st.expander("Gönderi Detayı / Düzenle", expanded=True):
@@ -350,31 +317,31 @@ for item in filtered:
                 recipient_name = st.text_input("Alıcı Adı", value=item.recipient_name or "")
                 address = st.text_area("Adres", value=item.address or "")
 
-                c1, c2, c3 = st.columns(3)
+                e1, e2, e3 = st.columns(3)
 
-                with c1:
+                with e1:
                     district = st.text_input("İlçe", value=item.district or "")
 
-                with c2:
+                with e2:
                     city = st.text_input("İl", value=item.city or "")
 
-                with c3:
+                with e3:
                     phone = st.text_input("Telefon", value=item.phone or "")
 
                 product_name = st.text_input("Ürün İçeriği", value=item.product_name or "")
 
-                c1, c2, c3, c4 = st.columns(4)
+                o1, o2, o3, o4 = st.columns(4)
 
-                with c1:
+                with o1:
                     width = st.number_input("En", value=float(item.width or 0))
 
-                with c2:
+                with o2:
                     length = st.number_input("Boy", value=float(item.length or 0))
 
-                with c3:
+                with o3:
                     height = st.number_input("Yükseklik", value=float(item.height or 0))
 
-                with c4:
+                with o4:
                     weight = st.number_input("Ağırlık", value=float(item.weight or 0))
 
                 kaydet = st.form_submit_button("Düzenlemeyi Kaydet")
@@ -397,54 +364,3 @@ for item in filtered:
                     db.commit()
                     st.success("Gönderi güncellendi.")
                     st.rerun()
-
-st.divider()
-
-selected_items = (
-    db.query(Shipment)
-    .filter(Shipment.id.in_(st.session_state.selected_shipments))
-    .all()
-)
-
-col1, col2, col3 = st.columns(3)
-
-with col1:
-    if st.button("Seçilenleri Yazdır", use_container_width=True):
-        if not selected_items:
-            st.error("Seçili gönderi yok.")
-        else:
-            st.session_state["bulk_pdf_ready"] = True
-            st.rerun()
-
-with col2:
-    if st.button("Seçilenleri Excele Aktar", use_container_width=True):
-        if not selected_items:
-            st.error("Seçili gönderi yok.")
-        else:
-            excel = create_excel(selected_items)
-
-            st.download_button(
-                "Exceli İndir",
-                excel,
-                file_name="gonderiler.xlsx",
-                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-            )
-
-with col3:
-    if st.button("Seçilenleri Sil", use_container_width=True):
-        for item in selected_items:
-            db.delete(item)
-
-        db.commit()
-        st.session_state.selected_shipments = []
-        st.rerun()
-
-if st.session_state.get("bulk_pdf_ready", False):
-    pdf = create_pdf(selected_items)
-
-    st.download_button(
-        "PDF İndir",
-        pdf,
-        file_name="etiketler.pdf",
-        mime="application/pdf"
-    )
