@@ -23,7 +23,6 @@ html, body, div, span, p, label, input, textarea, button {
 }
 h1 {
     font-size: 22px !important;
-    margin-bottom: 8px !important;
 }
 h2, h3 {
     font-size: 15px !important;
@@ -45,19 +44,8 @@ button {
     padding: 0.22rem 0.45rem !important;
     min-height: 28px !important;
 }
-.stTextInput input,
-.stTextArea textarea,
-.stNumberInput input,
-.stSelectbox div {
+.stTextInput input {
     font-size: 12px !important;
-}
-div[data-testid="stMarkdownContainer"] p {
-    font-size: 12px !important;
-    margin-bottom: 0.2rem !important;
-}
-hr {
-    margin-top: 0.5rem !important;
-    margin-bottom: 0.5rem !important;
 }
 </style>
 """, unsafe_allow_html=True)
@@ -66,11 +54,7 @@ Base.metadata.create_all(bind=engine)
 
 db = SessionLocal()
 
-admin = (
-    db.query(User)
-    .filter(User.username == "admin")
-    .first()
-)
+admin = db.query(User).filter(User.username == "admin").first()
 
 if not admin:
     db.add(
@@ -91,19 +75,17 @@ if "username" not in st.session_state:
 if "role" not in st.session_state:
     st.session_state.role = ""
 
-if not st.session_state.logged_in:
 
+def login_page():
     st.title("PTT Kargo Panel Giriş")
 
     col1, col2, col3 = st.columns([1, 1.2, 1])
 
     with col2:
-
         username = st.text_input("Kullanıcı Adı")
         password = st.text_input("Şifre", type="password")
 
         if st.button("Giriş Yap", use_container_width=True):
-
             user = (
                 db.query(User)
                 .filter(
@@ -114,16 +96,27 @@ if not st.session_state.logged_in:
             )
 
             if user:
-
                 st.session_state.logged_in = True
                 st.session_state.username = user.username
                 st.session_state.role = user.role
-
-                st.success("Giriş başarılı.")
                 st.rerun()
-
             else:
                 st.error("Hatalı kullanıcı adı veya şifre.")
+
+
+if not st.session_state.logged_in:
+
+    pg = st.navigation(
+        [
+            st.Page(
+                login_page,
+                title="Giriş",
+                icon="🔐"
+            )
+        ]
+    )
+
+    pg.run()
 
 else:
 
@@ -137,6 +130,20 @@ else:
         st.session_state.role = ""
         st.rerun()
 
-    st.title("PTT Kargo Panel")
+    pages = [
+        st.Page("pages/08_Dashboard.py", title="Dashboard", icon="📊"),
+        st.Page("pages/02_Gonderi_Olustur.py", title="Gönderi Oluştur", icon="📦"),
+        st.Page("pages/03_Gonderiler.py", title="Gönderiler", icon="📋"),
+        st.Page("pages/04_Subeler.py", title="Şubeler", icon="🏢"),
+        st.Page("pages/06_Barkodlar.py", title="Barkodlar", icon="🏷️"),
+        st.Page("pages/05_Urun_Olculeri.py", title="Ürün Ölçüleri", icon="📐"),
+        st.Page("pages/12_Yedekleme.py", title="Yedekleme", icon="💾"),
+    ]
 
-    st.info("Sol menüden işlem seçiniz.")
+    if st.session_state.role == "Admin":
+        pages.append(
+            st.Page("pages/07_Kullanicilar.py", title="Kullanıcılar", icon="👤")
+        )
+
+    pg = st.navigation(pages)
+    pg.run()
