@@ -12,6 +12,8 @@ from database.models import Base, Shipment
 
 Base.metadata.create_all(bind=engine)
 
+st.set_page_config(layout="wide")
+
 st.title("Gönderiler")
 
 db = SessionLocal()
@@ -49,11 +51,10 @@ def create_excel(shipments):
         })
 
     output = BytesIO()
-
     df = pd.DataFrame(rows)
     df.to_excel(output, index=False)
-
     output.seek(0)
+
     return output
 
 
@@ -160,7 +161,7 @@ def create_pdf(shipments):
             c.setFont("Helvetica-Bold", 3.4)
             c.drawString(x + 0.8 * mm, box_y + 3.1 * mm, titles[i])
             c.setFont("Helvetica", 3.3)
-            c.drawString(x + 0.8 * mm, box_y + 1.2 * mm, str(values[i]))
+            c.drawString(x + 0.8 * mm, box_y + 1.2 * mm, str(values[i])[:12])
 
         c.rect(1 * mm, 16 * mm, 38 * mm, 6 * mm)
         c.setFont("Helvetica-Bold", 4)
@@ -195,6 +196,7 @@ def create_pdf(shipments):
     c.save()
 
     output.seek(0)
+
     return output
 
 
@@ -261,9 +263,23 @@ if tumunu_sec:
 
 st.divider()
 
+header = st.columns([0.6, 1.8, 3.2, 3.2, 3, 2, 1.2, 1.2, 1.2])
+
+header[0].markdown("**Seç**")
+header[1].markdown("**Durum**")
+header[2].markdown("**Alıcı Adı**")
+header[3].markdown("**Ürün İçeriği**")
+header[4].markdown("**Takip No**")
+header[5].markdown("**Kullanıcı**")
+header[6].markdown("**Detay**")
+header[7].markdown("**PDF**")
+header[8].markdown("**Sil**")
+
+st.divider()
+
 for item in filtered:
     col0, col1, col2, col3, col4, col5, col6, col7, col8 = st.columns(
-        [1, 2, 3, 3, 3, 2, 2, 2, 2]
+        [0.6, 1.8, 3.2, 3.2, 3, 2, 1.2, 1.2, 1.2]
     )
 
     with col0:
@@ -281,21 +297,21 @@ for item in filtered:
 
     with col1:
         if item.is_printed:
-            st.error("Yazdırıldı")
+            st.markdown("🔴 **Yazdırıldı**")
         else:
-            st.success("Yazdırılmadı")
+            st.markdown("🟢 **Yazdırılmadı**")
 
     with col2:
-        st.write(item.recipient_name)
+        st.write(str(item.recipient_name or "")[:40])
 
     with col3:
-        st.write(item.product_name)
+        st.write(str(item.product_name or "")[:40])
 
     with col4:
-        st.write(item.tracking_number)
+        st.write(str(item.tracking_number or ""))
 
     with col5:
-        st.write(item.created_by)
+        st.write(str(item.created_by or ""))
 
     with col6:
         if st.button("Detay", key=f"detay_{item.id}"):
@@ -306,7 +322,7 @@ for item in filtered:
             st.rerun()
 
     with col7:
-        if st.button("Yazdır", key=f"yazdir_{item.id}"):
+        if st.button("PDF", key=f"yazdir_{item.id}"):
             st.session_state[f"pdf_single_{item.id}"] = True
             st.rerun()
 
