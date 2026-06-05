@@ -36,7 +36,23 @@ st.divider()
 
 st.subheader("Sepet")
 
-for i, kayit in enumerate(st.session_state.sepet, start=1):
+for i, kayit in enumerate(st.session_state.sepet):
+
+    col1, col2 = st.columns([10,1])
+
+    with col1:
+        st.write(
+            f"{i+1} - "
+            f"{kayit['Şube Adı']} | "
+            f"{kayit['Ürün']}"
+        )
+
+    with col2:
+        if st.button("❌", key=f"sil_{i}"):
+
+            st.session_state.sepet.pop(i)
+
+            st.rerun()
 
     st.write(
         f"{i} - "
