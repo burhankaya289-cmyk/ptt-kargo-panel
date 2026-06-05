@@ -1,13 +1,8 @@
 import streamlit as st
+import pandas as pd
 
 from database.database import SessionLocal, engine
-from database.models import (
-    Base,
-    Branch,
-    ProductDimension,
-    Barcode,
-    Shipment
-)
+from database.models import Base, Branch, ProductDimension, Barcode, Shipment
 
 Base.metadata.create_all(bind=engine)
 
@@ -18,236 +13,368 @@ db = SessionLocal()
 if "sepet" not in st.session_state:
     st.session_state.sepet = []
 
-# Şubeler
 
-subeler = db.query(Branch).order_by(
-    Branch.branch_name
-).all()
+def temizle(text):
+    return str(text or "").strip().lower()
 
-sube_dict = {
-    s.branch_name: s
-    for s in subeler
-}
 
-if len(sube_dict) == 0:
+def urun_olcusu_bul(urun_adi):
+    urunler = db.query(ProductDimension).all()
+    for urun in urunler:
+        if temizle(urun.product_name) == temizle(urun_adi):
+            return urun
+    return None
 
-    st.warning(
-        "Önce Şubeler ekranından şube ekleyin."
+
+def sube_bul(kod, ad):
+    kod = temizle(kod)
+    ad = temizle(ad)
+
+    subeler = db.query(Branch).all()
+
+    if kod == "0000":
+        return None
+
+    for sube in subeler:
+        if kod and temizle(sube.branch_code).startswith(kod):
+            return sube
+
+    for sube in subeler:
+        if ad and ad in temizle(sube.branch_name):
+            return sube
+
+    return None
+
+
+def bos_barkodlari_getir(adet):
+    sepetteki_barkodlar = [
+        item["barcode"]
+        for item in st.session_state.sepet
+    ]
+
+    barkodlar = (
+        db.query(Barcode)
+        .filter(Barcode.is_used == False)
+        .all()
     )
-    st.stop()
 
-sube_adi = st.selectbox(
-    "Şube",
-    list(sube_dict.keys())
-)
+    uygunlar = []
 
-secilen_sube = sube_dict[sube_adi]
+    for barkod in barkodlar:
+        if barkod.barcode not in sepetteki_barkodlar:
+            uygunlar.append(barkod)
 
-# Alıcı Bilgileri
+        if len(uygunlar) == adet:
+            break
+
+    return uygunlar
+
+
+st.subheader("Alıcı / Şube Bilgileri")
 
 col1, col2 = st.columns(2)
 
 with col1:
+    arama_kodu = st.text_input("Şube Kodu")
 
-    recipient_name = st.text_input(
-        "Alıcı Adı"
+with col2:
+    arama_adi = st.text_input("Şube Adı")
+
+secilen_sube = sube_bul(arama_kodu, arama_adi)
+
+manuel_gonderi = temizle(arama_kodu) == "0000" or secilen_sube is None
+
+if secilen_sube:
+    st.success(
+        f"Seçilen Şube: {secilen_sube.branch_code} - {secilen_sube.branch_name}"
     )
 
-    phone = st.text_input(
-        "Telefon"
+    branch_code = secilen_sube.branch_code
+    branch_name = secilen_sube.branch_name
+
+    default_recipient = secilen_sube.branch_name
+    default_address = secilen_sube.address
+    default_district = secilen_sube.district
+    default_city = secilen_sube.city
+
+else:
+    branch_code = arama_kodu
+    branch_name = arama_adi
+
+    default_recipient = arama_adi
+    default_address = ""
+    default_district = ""
+    default_city = ""
+
+    if temizle(arama_kodu) == "0000":
+        st.info("0000 girildi. Manuel alıcı bilgisi doldurulacak.")
+    elif arama_kodu or arama_adi:
+        st.warning("Şube bulunamadı. Manuel bilgiyle devam edebilirsiniz.")
+
+col1, col2 = st.columns(2)
+
+with col1:
+    recipient_name = st.text_input(
+        "Alıcı Adı",
+        value=default_recipient or "",
+        key=f"recipient_{branch_code}_{branch_name}"
+    )
+
+    recipient_phone = st.text_input("Telefon")
+
+with col2:
+    recipient_district = st.text_input(
+        "İlçe",
+        value=default_district or "",
+        key=f"district_{branch_code}_{branch_name}"
+    )
+
+    recipient_city = st.text_input(
+        "İl",
+        value=default_city or "",
+        key=f"city_{branch_code}_{branch_name}"
+    )
+
+recipient_address = st.text_area(
+    "Adres",
+    value=default_address or "",
+    key=f"address_{branch_code}_{branch_name}"
+)
+
+st.divider()
+
+st.subheader("Ürün Bilgileri")
+
+urun_adi = st.text_input("Ürün İçeriği")
+
+bulunan_olcu = urun_olcusu_bul(urun_adi)
+
+if bulunan_olcu:
+    st.success("Ürün ölçüsü bulundu.")
+    default_width = float(bulunan_olcu.width or 0)
+    default_length = float(bulunan_olcu.length or 0)
+    default_height = float(bulunan_olcu.height or 0)
+    default_weight = float(bulunan_olcu.weight or 0)
+else:
+    default_width = 0.0
+    default_length = 0.0
+    default_height = 0.0
+    default_weight = 0.0
+
+col1, col2, col3, col4, col5 = st.columns(5)
+
+with col1:
+    width = st.number_input(
+        "En",
+        min_value=0.0,
+        value=default_width,
+        step=1.0
     )
 
 with col2:
-
-    district = st.text_input(
-        "İlçe"
+    length = st.number_input(
+        "Boy",
+        min_value=0.0,
+        value=default_length,
+        step=1.0
     )
 
-    city = st.text_input(
-        "İl"
+with col3:
+    height = st.number_input(
+        "Yükseklik",
+        min_value=0.0,
+        value=default_height,
+        step=1.0
     )
 
-address = st.text_area(
-    "Adres"
-)
-
-st.divider()
-
-# Ürün
-
-urun_adi = st.text_input(
-    "Ürün İçeriği"
-)
-
-adet = st.number_input(
-    "Adet",
-    min_value=1,
-    value=1,
-    step=1
-)
-
-olcu = (
-    db.query(ProductDimension)
-    .filter(
-        ProductDimension.product_name
-        == urun_adi
-    )
-    .first()
-)
-
-if olcu:
-
-    col1, col2, col3, col4 = st.columns(4)
-
-    with col1:
-        st.info(f"En: {olcu.width}")
-
-    with col2:
-        st.info(f"Boy: {olcu.length}")
-
-    with col3:
-        st.info(f"Yükseklik: {olcu.height}")
-
-    with col4:
-        st.info(f"Ağırlık: {olcu.weight}")
-
-if st.button("Sepete Ekle"):
-
-    barkodlar = (
-        db.query(Barcode)
-        .filter(
-            Barcode.is_used == False
-        )
-        .limit(adet)
-        .all()
+with col4:
+    weight = st.number_input(
+        "Ağırlık (gr)",
+        min_value=0.0,
+        value=default_weight,
+        step=1.0
     )
 
-    if len(barkodlar) < adet:
+with col5:
+    adet = st.number_input(
+        "Adet",
+        min_value=1,
+        value=1,
+        step=1
+    )
 
-        st.error(
-            "Yeterli boş barkod yok."
-        )
+if st.button("Sepete Ekle", use_container_width=True):
+
+    if not recipient_name.strip():
+        st.error("Alıcı adı boş olamaz.")
+
+    elif not urun_adi.strip():
+        st.error("Ürün içeriği boş olamaz.")
 
     else:
+        barkodlar = bos_barkodlari_getir(int(adet))
 
-        for barkod in barkodlar:
-
-            st.session_state.sepet.append(
-                {
-                    "barcode": barkod.barcode,
-                    "branch_code": secilen_sube.branch_code,
-                    "branch_name": secilen_sube.branch_name,
-                    "recipient_name": recipient_name,
-                    "address": address,
-                    "district": district,
-                    "city": city,
-                    "phone": phone,
-                    "product_name": urun_adi,
-                    "width": olcu.width if olcu else 0,
-                    "length": olcu.length if olcu else 0,
-                    "height": olcu.height if olcu else 0,
-                    "weight": olcu.weight if olcu else 0
-                }
+        if len(barkodlar) < int(adet):
+            st.error(
+                f"Yetersiz barkod. İstenen: {adet}, Kullanılabilir: {len(barkodlar)}"
             )
 
-        st.success(
-            f"{adet} kayıt sepete eklendi"
-        )
+        else:
+            for barkod in barkodlar:
+                st.session_state.sepet.append(
+                    {
+                        "barcode": barkod.barcode,
+                        "tracking_number": barkod.barcode,
+                        "branch_code": branch_code,
+                        "branch_name": branch_name,
+                        "recipient_name": recipient_name,
+                        "address": recipient_address,
+                        "district": recipient_district,
+                        "city": recipient_city,
+                        "phone": recipient_phone,
+                        "product_name": urun_adi,
+                        "width": width,
+                        "length": length,
+                        "height": height,
+                        "weight": weight,
+                    }
+                )
 
-st.divider()
-
-st.subheader(
-    f"Sepet ({len(st.session_state.sepet)})"
-)
-
-for i, item in enumerate(
-    st.session_state.sepet
-):
-
-    col1, col2 = st.columns([12, 1])
-
-    with col1:
-
-        st.write(
-            f"{item['barcode']} | "
-            f"{item['branch_name']} | "
-            f"{item['recipient_name']} | "
-            f"{item['product_name']} | "
-            f"{item['weight']} gr"
-        )
-
-    with col2:
-
-        if st.button(
-            "❌",
-            key=f"sil_{i}"
-        ):
-
-            st.session_state.sepet.pop(i)
-
+            st.success(f"{adet} gönderi sepete eklendi.")
             st.rerun()
 
 st.divider()
 
-col1, col2 = st.columns(2)
+st.subheader(f"Sepet ({len(st.session_state.sepet)})")
 
-with col1:
+if not st.session_state.sepet:
+    st.info("Sepet boş.")
 
-    if st.button(
-        "Sepeti Temizle"
-    ):
+else:
+    grup = {}
 
-        st.session_state.sepet = []
+    for item in st.session_state.sepet:
+        alici = item["recipient_name"] or "Alıcı Yok"
+        if alici not in grup:
+            grup[alici] = []
+        grup[alici].append(item)
 
-        st.rerun()
+    for alici, kayitlar in grup.items():
+        with st.expander(f"{alici} ({len(kayitlar)} gönderi)", expanded=True):
 
-with col2:
+            for item in kayitlar:
+                real_index = st.session_state.sepet.index(item)
 
-    if st.button(
-        "Gönderileri Kaydet"
-    ):
+                col1, col2, col3 = st.columns([8, 2, 1])
 
-        for item in st.session_state.sepet:
+                with col1:
+                    st.write(
+                        f"{item['barcode']} | "
+                        f"{item['product_name']} | "
+                        f"{item['width']}x{item['length']}x{item['height']} | "
+                        f"{item['weight']} gr"
+                    )
 
-            shipment = Shipment(
-                barcode=item["barcode"],
-                tracking_number=item["barcode"],
-                branch_code=item["branch_code"],
-                branch_name=item["branch_name"],
-                recipient_name=item["recipient_name"],
-                address=item["address"],
-                district=item["district"],
-                city=item["city"],
-                phone=item["phone"],
-                product_name=item["product_name"],
-                width=item["width"],
-                length=item["length"],
-                height=item["height"],
-                weight=item["weight"],
-                created_by="admin",
-                is_printed=False
-            )
+                with col2:
+                    if st.button("Düzenle", key=f"duzenle_{real_index}"):
+                        st.session_state[f"edit_{real_index}"] = True
+                        st.rerun()
 
-            db.add(shipment)
+                with col3:
+                    if st.button("❌", key=f"sil_{real_index}"):
+                        st.session_state.sepet.pop(real_index)
+                        st.rerun()
 
-            barkod = (
-                db.query(Barcode)
-                .filter(
-                    Barcode.barcode
-                    == item["barcode"]
+                if st.session_state.get(f"edit_{real_index}", False):
+                    e1, e2, e3, e4 = st.columns(4)
+
+                    with e1:
+                        yeni_urun = st.text_input(
+                            "Ürün",
+                            value=item["product_name"],
+                            key=f"edit_urun_{real_index}"
+                        )
+
+                    with e2:
+                        yeni_en = st.number_input(
+                            "En",
+                            value=float(item["width"]),
+                            key=f"edit_en_{real_index}"
+                        )
+
+                    with e3:
+                        yeni_boy = st.number_input(
+                            "Boy",
+                            value=float(item["length"]),
+                            key=f"edit_boy_{real_index}"
+                        )
+
+                    with e4:
+                        yeni_yukseklik = st.number_input(
+                            "Yükseklik",
+                            value=float(item["height"]),
+                            key=f"edit_yukseklik_{real_index}"
+                        )
+
+                    yeni_agirlik = st.number_input(
+                        "Ağırlık",
+                        value=float(item["weight"]),
+                        key=f"edit_agirlik_{real_index}"
+                    )
+
+                    if st.button("Düzenlemeyi Kaydet", key=f"edit_kaydet_{real_index}"):
+                        st.session_state.sepet[real_index]["product_name"] = yeni_urun
+                        st.session_state.sepet[real_index]["width"] = yeni_en
+                        st.session_state.sepet[real_index]["length"] = yeni_boy
+                        st.session_state.sepet[real_index]["height"] = yeni_yukseklik
+                        st.session_state.sepet[real_index]["weight"] = yeni_agirlik
+                        st.session_state[f"edit_{real_index}"] = False
+                        st.rerun()
+
+    st.divider()
+
+    col1, col2 = st.columns(2)
+
+    with col1:
+        if st.button("Sepeti Temizle", use_container_width=True):
+            st.session_state.sepet = []
+            st.rerun()
+
+    with col2:
+        if st.button("Gönderileri Kaydet", use_container_width=True):
+            for item in st.session_state.sepet:
+
+                shipment = Shipment(
+                    barcode=item["barcode"],
+                    tracking_number=item["tracking_number"],
+                    branch_code=item["branch_code"],
+                    branch_name=item["branch_name"],
+                    recipient_name=item["recipient_name"],
+                    address=item["address"],
+                    district=item["district"],
+                    city=item["city"],
+                    phone=item["phone"],
+                    product_name=item["product_name"],
+                    width=item["width"],
+                    length=item["length"],
+                    height=item["height"],
+                    weight=item["weight"],
+                    created_by="admin",
+                    is_printed=False
                 )
-                .first()
-            )
 
-            if barkod:
-                barkod.is_used = True
+                db.add(shipment)
 
-        db.commit()
+                barkod = (
+                    db.query(Barcode)
+                    .filter(Barcode.barcode == item["barcode"])
+                    .first()
+                )
 
-        st.session_state.sepet = []
+                if barkod:
+                    barkod.is_used = True
 
-        st.success(
-            "Gönderiler kaydedildi."
-        )
-
-        st.rerun()
+            db.commit()
+            st.session_state.sepet = []
+            st.success("Gönderiler kaydedildi.")
+            st.rerun()
