@@ -29,8 +29,15 @@ if "username" not in st.session_state:
 if "role" not in st.session_state:
     st.session_state.role = ""
 
+if not st.session_state.logged_in:
+    st.markdown("""
+    <style>
+    section[data-testid="stSidebar"] {
+        display: none !important;
+    }
+    </style>
+    """, unsafe_allow_html=True)
 
-def login_page():
     st.title("PTT Kargo Panel Giriş")
 
     username = st.text_input("Kullanıcı Adı")
@@ -51,9 +58,6 @@ def login_page():
         else:
             st.error("Hatalı kullanıcı adı veya şifre.")
 
-
-if not st.session_state.logged_in:
-    login_page()
     st.stop()
 
 st.sidebar.success(f"{st.session_state.username} | {st.session_state.role}")
