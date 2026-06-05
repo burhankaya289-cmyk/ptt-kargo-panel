@@ -1,7 +1,9 @@
 import os
 import shutil
 import streamlit as st
+from utils.auth import require_login
 
+require_login()
 st.set_page_config(layout="wide", initial_sidebar_state="expanded")
 
 st.markdown("""
