@@ -1,8 +1,64 @@
 import streamlit as st
 import pandas as pd
+from io import BytesIO
 
 from database.database import SessionLocal, engine
 from database.models import Base, Barcode
+
+st.set_page_config(layout="wide", initial_sidebar_state="expanded")
+
+st.markdown("""
+<style>
+html, body, div, span, p, label, input, textarea, button {
+    font-size: 12px !important;
+}
+.block-container {
+    padding-top: 1rem !important;
+    padding-left: 1.2rem !important;
+    padding-right: 1.2rem !important;
+    max-width: 100% !important;
+}
+h1 {
+    font-size: 22px !important;
+    margin-bottom: 8px !important;
+}
+h2, h3 {
+    font-size: 15px !important;
+}
+section[data-testid="stSidebar"] {
+    min-width: 220px !important;
+    max-width: 220px !important;
+}
+section[data-testid="stSidebar"] * {
+    font-size: 12px !important;
+}
+button[kind="header"] {
+    display: none !important;
+}
+.stButton button,
+.stDownloadButton button,
+button {
+    font-size: 12px !important;
+    padding: 0.22rem 0.45rem !important;
+    min-height: 28px !important;
+}
+.stTextInput input,
+.stTextArea textarea,
+.stNumberInput input,
+.stSelectbox div,
+.stFileUploader label {
+    font-size: 12px !important;
+}
+div[data-testid="stMarkdownContainer"] p {
+    font-size: 12px !important;
+    margin-bottom: 0.2rem !important;
+}
+hr {
+    margin-top: 0.5rem !important;
+    margin-bottom: 0.5rem !important;
+}
+</style>
+""", unsafe_allow_html=True)
 
 Base.metadata.create_all(bind=engine)
 
@@ -10,7 +66,27 @@ st.title("Barkodlar")
 
 db = SessionLocal()
 
-# Excel Yükleme
+
+def temizle(value):
+    return str(value or "").strip()
+
+
+def export_excel(barcodes):
+    rows = []
+
+    for item in barcodes:
+        rows.append(
+            {
+                "Barkod": item.barcode
+            }
+        )
+
+    output = BytesIO()
+    pd.DataFrame(rows).to_excel(output, index=False)
+    output.seek(0)
+
+    return output
+
 
 uploaded_file = st.file_uploader(
     "Excel Yükle",
@@ -20,52 +96,54 @@ uploaded_file = st.file_uploader(
 if uploaded_file is not None:
 
     try:
-
         df = pd.read_excel(uploaded_file)
 
         st.subheader("Excel Önizleme")
         st.dataframe(df, use_container_width=True)
 
-        if st.button("Exceli İçe Aktar"):
+        if st.button("Exceli İçe Aktar", use_container_width=True):
+
+            eklenen = 0
+            atlanan = 0
 
             for _, row in df.iterrows():
 
-                barcode_value = str(
-                    row.iloc[0]
-                ).strip()
+                barkod = temizle(row.iloc[0])
 
-                if not barcode_value:
+                if not barkod:
+                    atlanan += 1
                     continue
 
                 existing = (
                     db.query(Barcode)
-                    .filter(
-                        Barcode.barcode == barcode_value
-                    )
+                    .filter(Barcode.barcode == barkod)
                     .first()
                 )
 
-                if not existing:
+                if existing:
+                    atlanan += 1
 
+                else:
                     db.add(
                         Barcode(
-                            barcode=barcode_value,
+                            barcode=barkod,
                             is_used=False
                         )
                     )
+                    eklenen += 1
 
             db.commit()
 
-            st.success("Barkodlar aktarıldı")
+            st.success(
+                f"Barkodlar aktarıldı. Eklenen: {eklenen} | Atlanan: {atlanan}"
+            )
+
             st.rerun()
 
     except Exception as e:
-
-        st.error(str(e))
+        st.error(f"Hata: {e}")
 
 st.divider()
-
-# Manuel Barkod Ekle
 
 st.subheader("Manuel Barkod Ekle")
 
@@ -73,187 +151,181 @@ with st.form("barkod_form"):
 
     barkod = st.text_input("Barkod")
 
-    submit = st.form_submit_button(
-        "Kaydet"
-    )
+    submit = st.form_submit_button("Kaydet")
 
     if submit:
 
-        existing = (
-            db.query(Barcode)
-            .filter(
-                Barcode.barcode == barkod
-            )
-            .first()
-        )
+        barkod = temizle(barkod)
 
-        if existing:
-
-            st.warning(
-                "Bu barkod zaten mevcut"
-            )
+        if not barkod:
+            st.error("Barkod boş olamaz.")
 
         else:
-
-            db.add(
-                Barcode(
-                    barcode=barkod,
-                    is_used=False
-                )
+            existing = (
+                db.query(Barcode)
+                .filter(Barcode.barcode == barkod)
+                .first()
             )
 
-            db.commit()
+            if existing:
+                st.warning("Bu barkod zaten mevcut.")
 
-            st.success("Barkod eklendi")
-            st.rerun()
-
-st.divider()
-
-# Filtre
-
-filtre = st.selectbox(
-    "Filtre",
-    [
-        "Tümü",
-        "Kullanılanlar",
-        "Kullanılmayanlar"
-    ]
-)
-
-if filtre == "Kullanılanlar":
-
-    barkodlar = (
-        db.query(Barcode)
-        .filter(
-            Barcode.is_used == True
-        )
-        .all()
-    )
-
-elif filtre == "Kullanılmayanlar":
-
-    barkodlar = (
-        db.query(Barcode)
-        .filter(
-            Barcode.is_used == False
-        )
-        .all()
-    )
-
-else:
-
-    barkodlar = (
-        db.query(Barcode)
-        .all()
-    )
-
-st.subheader(
-    f"Kayıtlı Barkodlar ({len(barkodlar)})"
-)
-
-if barkodlar:
-
-    data = []
-
-    for barkod in barkodlar:
-
-        data.append(
-            {
-                "Barkod": barkod.barcode,
-                "Kullanıldı": (
-                    "Evet"
-                    if barkod.is_used
-                    else "Hayır"
+            else:
+                db.add(
+                    Barcode(
+                        barcode=barkod,
+                        is_used=False
+                    )
                 )
-            }
-        )
+                db.commit()
 
-    st.dataframe(
-        pd.DataFrame(data),
-        use_container_width=True
-    )
-
-else:
-
-    st.info(
-        "Barkod bulunamadı"
-    )
+                st.success("Barkod eklendi.")
+                st.rerun()
 
 st.divider()
+
+st.subheader("Kayıtlı Barkodlar")
 
 col1, col2 = st.columns(2)
 
 with col1:
+    filtre_barkod = st.text_input("Barkod Ara")
 
-    if st.button(
-        "Kullanılanları Sil"
-    ):
+with col2:
+    filtre_durum = st.selectbox(
+        "Durum",
+        [
+            "Tümü",
+            "Kullanılanlar",
+            "Kullanılmayanlar"
+        ]
+    )
 
+all_barcodes = db.query(Barcode).order_by(Barcode.barcode.asc()).all()
+
+filtered = []
+
+for item in all_barcodes:
+
+    if filtre_barkod and filtre_barkod not in str(item.barcode):
+        continue
+
+    if filtre_durum == "Kullanılanlar" and not item.is_used:
+        continue
+
+    if filtre_durum == "Kullanılmayanlar" and item.is_used:
+        continue
+
+    filtered.append(item)
+
+st.write(f"Toplam Barkod: {len(filtered)}")
+
+selected_key = "selected_barcodes"
+
+if selected_key not in st.session_state:
+    st.session_state[selected_key] = []
+
+tumunu_sec = st.checkbox("Tümünü Seç")
+
+if tumunu_sec:
+    st.session_state[selected_key] = [
+        item.id for item in filtered
+    ]
+
+selected_items = (
+    db.query(Barcode)
+    .filter(Barcode.id.in_(st.session_state[selected_key]))
+    .all()
+)
+
+top1, top2, top3 = st.columns(3)
+
+with top1:
+    if selected_items:
+        excel_file = export_excel(selected_items)
+        st.download_button(
+            "Seçilenleri Excele Aktar",
+            excel_file,
+            file_name="barkodlar.xlsx",
+            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            use_container_width=True
+        )
+    else:
+        st.button(
+            "Seçilenleri Excele Aktar",
+            disabled=True,
+            use_container_width=True
+        )
+
+with top2:
+    if st.button("Seçilenleri Sil", use_container_width=True):
+        for item in selected_items:
+            db.delete(item)
+
+        db.commit()
+
+        st.session_state[selected_key] = []
+
+        st.rerun()
+
+with top3:
+    if st.button("Kullanılanları Sil", use_container_width=True):
         (
             db.query(Barcode)
-            .filter(
-                Barcode.is_used == True
-            )
+            .filter(Barcode.is_used == True)
             .delete()
         )
 
         db.commit()
 
-        st.success(
-            "Kullanılan barkodlar silindi"
-        )
-
+        st.success("Kullanılan barkodlar silindi.")
         st.rerun()
 
-with col2:
+st.divider()
 
-    kullanilmayanlar = (
-        db.query(Barcode)
-        .filter(
-            Barcode.is_used == False
-        )
-        .all()
-    )
+if not filtered:
 
-    if st.button(
-        "Kullanılmayanları Excele Aktar"
-    ):
+    st.info("Barkod bulunamadı.")
 
-        export_data = []
+else:
 
-        for item in kullanilmayanlar:
+    header = st.columns([0.6, 4, 2, 1.2])
 
-            export_data.append(
-                {
-                    "Barkod":
-                    item.barcode
-                }
+    header[0].markdown("**Seç**")
+    header[1].markdown("**Barkod**")
+    header[2].markdown("**Durum**")
+    header[3].markdown("**Sil**")
+
+    st.divider()
+
+    for item in filtered:
+
+        col0, col1, col2, col3 = st.columns([0.6, 4, 2, 1.2])
+
+        with col0:
+            secili = st.checkbox(
+                "",
+                value=item.id in st.session_state[selected_key],
+                key=f"barkod_sec_{item.id}"
             )
 
-        export_df = pd.DataFrame(
-            export_data
-        )
+            if secili and item.id not in st.session_state[selected_key]:
+                st.session_state[selected_key].append(item.id)
 
-        excel_file = (
-            "kullanilmayan_barkodlar.xlsx"
-        )
+            if not secili and item.id in st.session_state[selected_key]:
+                st.session_state[selected_key].remove(item.id)
 
-        export_df.to_excel(
-            excel_file,
-            index=False
-        )
+        with col1:
+            st.write(item.barcode)
 
-        st.success(
-            f"{len(export_data)} barkod hazırlandı"
-        )
+        with col2:
+            if item.is_used:
+                st.markdown("🔴 Kullanıldı")
+            else:
+                st.markdown("🟢 Kullanılmadı")
 
-        with open(
-            excel_file,
-            "rb"
-        ) as f:
-
-            st.download_button(
-                "Exceli İndir",
-                f,
-                file_name=excel_file
-            )
+        with col3:
+            if st.button("Sil", key=f"sil_{item.id}"):
+                db.delete(item)
+                db.commit()
+                st.rerun()
