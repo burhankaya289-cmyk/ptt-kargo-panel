@@ -68,5 +68,20 @@ if st.sidebar.button("Çıkış Yap"):
     st.session_state.role = ""
     st.rerun()
 
-st.title("PTT Kargo Panel")
-st.info("Sol menüden işlem seçiniz.")
+pages = [
+    st.Page("pages/08_Dashboard.py", title="Dashboard", icon="📊"),
+    st.Page("pages/02_Gonderi_Olustur.py", title="Gönderi Oluştur", icon="📦"),
+    st.Page("pages/03_Gonderiler.py", title="Gönderiler", icon="📋"),
+    st.Page("pages/04_Subeler.py", title="Şubeler", icon="🏢"),
+    st.Page("pages/06_Barkodlar.py", title="Barkodlar", icon="🏷️"),
+    st.Page("pages/05_Urun_Olculeri.py", title="Ürün Ölçüleri", icon="📐"),
+    st.Page("pages/12_Yedekleme.py", title="Yedekleme", icon="💾"),
+]
+
+if st.session_state.role == "Admin":
+    pages.append(
+        st.Page("pages/07_Kullanicilar.py", title="Kullanıcılar", icon="👤")
+    )
+
+pg = st.navigation(pages)
+pg.run()
