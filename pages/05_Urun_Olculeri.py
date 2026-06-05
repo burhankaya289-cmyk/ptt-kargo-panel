@@ -8,40 +8,84 @@ st.set_page_config(layout="wide", initial_sidebar_state="expanded")
 
 st.markdown("""
 <style>
-html, body, [class*="css"] {
-    font-size: 14px !important;
+/* GENEL YAZI BOYUTU */
+html, body, div, span, p, label, input, textarea, button {
+    font-size: 13px !important;
 }
+
+/* BAŞLIKLAR */
+h1 {
+    font-size: 24px !important;
+    margin-bottom: 12px !important;
+}
+
+h2, h3 {
+    font-size: 17px !important;
+}
+
+/* SOL MENÜ SABİT VE KÜÇÜK */
 section[data-testid="stSidebar"] {
     min-width: 230px !important;
     max-width: 230px !important;
 }
+
+section[data-testid="stSidebar"] * {
+    font-size: 13px !important;
+}
+
 button[kind="header"] {
     display: none !important;
 }
-.stButton button {
-    font-size: 13px !important;
-    padding: 0.35rem 0.6rem !important;
-}
-.stDownloadButton button {
-    font-size: 13px !important;
-    padding: 0.35rem 0.6rem !important;
-}
+
+/* INPUTLAR */
 .stTextInput input,
 .stTextArea textarea,
 .stNumberInput input,
-.stSelectbox div {
+.stSelectbox div,
+.stFileUploader label {
     font-size: 13px !important;
 }
-div[data-testid="stMarkdownContainer"] p {
+
+/* BUTONLAR */
+.stButton button,
+.stDownloadButton button,
+button {
+    font-size: 13px !important;
+    padding: 0.30rem 0.55rem !important;
+    min-height: 32px !important;
+}
+
+/* TABLO / DATAFRAME */
+[data-testid="stDataFrame"] {
+    font-size: 12px !important;
+}
+
+[data-testid="stDataFrame"] div {
+    font-size: 12px !important;
+}
+
+/* METRIC / INFO / SUCCESS */
+[data-testid="stAlert"] div {
     font-size: 13px !important;
 }
-h1 {
-    font-size: 26px !important;
+
+/* FORM LABEL */
+label {
+    font-size: 13px !important;
 }
-h2, h3 {
-    font-size: 18px !important;
+
+/* BOŞLUKLARI AZALT */
+.block-container {
+    padding-top: 1.5rem !important;
+    padding-left: 1.5rem !important;
+    padding-right: 1.5rem !important;
+}
+
+div[data-testid="column"] {
+    padding: 0 4px !important;
 }
 </style>
+""", unsafe_allow_html=True)
 """, unsafe_allow_html=True)
 
 Base.metadata.create_all(bind=engine)
