@@ -1,6 +1,8 @@
 import streamlit as st
 import pandas as pd
+from utils.auth import require_login
 
+require_login()
 from database.database import SessionLocal, engine
 from database.models import Base, Branch
 
