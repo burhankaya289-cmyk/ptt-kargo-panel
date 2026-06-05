@@ -8,84 +8,95 @@ st.set_page_config(layout="wide", initial_sidebar_state="expanded")
 
 st.markdown("""
 <style>
-/* GENEL YAZI BOYUTU */
+/* GENEL */
 html, body, div, span, p, label, input, textarea, button {
-    font-size: 13px !important;
+    font-size: 12px !important;
+}
+
+/* ANA ALAN */
+.block-container {
+    padding-top: 1rem !important;
+    padding-left: 1.2rem !important;
+    padding-right: 1.2rem !important;
+    max-width: 100% !important;
 }
 
 /* BAŞLIKLAR */
 h1 {
-    font-size: 24px !important;
-    margin-bottom: 12px !important;
+    font-size: 22px !important;
+    margin-bottom: 8px !important;
 }
 
 h2, h3 {
-    font-size: 17px !important;
+    font-size: 15px !important;
+    margin-top: 8px !important;
+    margin-bottom: 6px !important;
 }
 
-/* SOL MENÜ SABİT VE KÜÇÜK */
+/* SOL MENÜ */
 section[data-testid="stSidebar"] {
-    min-width: 230px !important;
-    max-width: 230px !important;
+    min-width: 220px !important;
+    max-width: 220px !important;
 }
 
 section[data-testid="stSidebar"] * {
-    font-size: 13px !important;
+    font-size: 12px !important;
 }
 
 button[kind="header"] {
     display: none !important;
 }
 
-/* INPUTLAR */
+/* INPUT */
 .stTextInput input,
 .stTextArea textarea,
 .stNumberInput input,
 .stSelectbox div,
 .stFileUploader label {
-    font-size: 13px !important;
+    font-size: 12px !important;
 }
 
-/* BUTONLAR */
+/* LABEL */
+label {
+    font-size: 12px !important;
+}
+
+/* BUTON */
 .stButton button,
 .stDownloadButton button,
 button {
-    font-size: 13px !important;
-    padding: 0.30rem 0.55rem !important;
-    min-height: 32px !important;
-}
-
-/* TABLO / DATAFRAME */
-[data-testid="stDataFrame"] {
     font-size: 12px !important;
+    padding: 0.22rem 0.45rem !important;
+    min-height: 28px !important;
 }
 
-[data-testid="stDataFrame"] div {
-    font-size: 12px !important;
-}
-
-/* METRIC / INFO / SUCCESS */
+/* ALERT */
 [data-testid="stAlert"] div {
-    font-size: 13px !important;
+    font-size: 12px !important;
 }
 
-/* FORM LABEL */
-label {
-    font-size: 13px !important;
+/* DATAFRAME */
+[data-testid="stDataFrame"] * {
+    font-size: 11px !important;
 }
 
-/* BOŞLUKLARI AZALT */
-.block-container {
-    padding-top: 1.5rem !important;
-    padding-left: 1.5rem !important;
-    padding-right: 1.5rem !important;
+/* MARKDOWN */
+div[data-testid="stMarkdownContainer"] p {
+    font-size: 12px !important;
+    margin-bottom: 0.2rem !important;
 }
 
+/* KOLON BOŞLUK */
 div[data-testid="column"] {
-    padding: 0 4px !important;
+    padding: 0 3px !important;
+}
+
+/* DİVIDER BOŞLUK */
+hr {
+    margin-top: 0.5rem !important;
+    margin-bottom: 0.5rem !important;
 }
 </style>
-""", unsafe_allow_html=True)
 """, unsafe_allow_html=True)
 
 Base.metadata.create_all(bind=engine)
@@ -286,7 +297,7 @@ if not filtered:
 
 else:
 
-    header = st.columns([4, 1.3, 1.3, 1.5, 1.5, 1.2, 1.2])
+    header = st.columns([4, 1.2, 1.2, 1.4, 1.4, 1.1, 1.1])
 
     header[0].markdown("**Ürün Adı**")
     header[1].markdown("**En**")
@@ -301,7 +312,7 @@ else:
     for urun in filtered:
 
         col1, col2, col3, col4, col5, col6, col7 = st.columns(
-            [4, 1.3, 1.3, 1.5, 1.5, 1.2, 1.2]
+            [4, 1.2, 1.2, 1.4, 1.4, 1.1, 1.1]
         )
 
         with col1:
