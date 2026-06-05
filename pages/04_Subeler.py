@@ -1,14 +1,15 @@
 import streamlit as st
 import pandas as pd
 
-from database.database import SessionLocal
-from database.models import Branch
+from database.database import SessionLocal, engine
+from database.models import Base, Branch
+
+# Tabloları garanti oluştur
+Base.metadata.create_all(bind=engine)
 
 st.title("Şubeler")
 
 db = SessionLocal()
-
-# Excel yükleme
 
 uploaded_file = st.file_uploader(
     "Excel Yükle",
@@ -49,26 +50,25 @@ if uploaded_file is not None:
 
                 else:
 
-                    branch = Branch(
-                        branch_code=branch_code,
-                        branch_name=branch_name,
-                        address=address,
-                        district=district,
-                        city=city
+                    db.add(
+                        Branch(
+                            branch_code=branch_code,
+                            branch_name=branch_name,
+                            address=address,
+                            district=district,
+                            city=city
+                        )
                     )
-
-                    db.add(branch)
 
             db.commit()
 
             st.success("Excel içe aktarıldı")
+            st.rerun()
 
     except Exception as e:
-        st.error(str(e))
+        st.error(f"Hata: {e}")
 
 st.divider()
-
-# Manuel Şube Ekleme
 
 st.subheader("Manuel Şube Ekle")
 
@@ -84,48 +84,54 @@ with st.form("sube_form"):
 
     if submit:
 
-        branch = Branch(
-            branch_code=branch_code,
-            branch_name=branch_name,
-            address=address,
-            district=district,
-            city=city
+        db.add(
+            Branch(
+                branch_code=branch_code,
+                branch_name=branch_name,
+                address=address,
+                district=district,
+                city=city
+            )
         )
 
-        db.add(branch)
         db.commit()
 
         st.success("Şube kaydedildi")
+        st.rerun()
 
 st.divider()
 
-# Şubeler Listesi
-
 st.subheader("Kayıtlı Şubeler")
 
-subeler = db.query(Branch).all()
+try:
 
-if len(subeler) == 0:
+    subeler = db.query(Branch).all()
 
-    st.info("Kayıtlı şube bulunamadı.")
+    if not subeler:
 
-else:
+        st.info("Kayıtlı şube bulunamadı.")
 
-    data = []
+    else:
 
-    for sube in subeler:
+        data = []
 
-        data.append(
-            {
-                "Şube Kodu": sube.branch_code,
-                "Şube Adı": sube.branch_name,
-                "Adres": sube.address,
-                "İlçe": sube.district,
-                "İl": sube.city,
-            }
+        for sube in subeler:
+
+            data.append(
+                {
+                    "Şube Kodu": sube.branch_code,
+                    "Şube Adı": sube.branch_name,
+                    "Adres": sube.address,
+                    "İlçe": sube.district,
+                    "İl": sube.city
+                }
+            )
+
+        st.dataframe(
+            pd.DataFrame(data),
+            use_container_width=True
         )
 
-    st.dataframe(
-        pd.DataFrame(data),
-        use_container_width=True
-    )
+except Exception as e:
+
+    st.error(f"Veritabanı Hatası: {e}")
