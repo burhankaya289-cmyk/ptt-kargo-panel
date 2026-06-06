@@ -739,10 +739,9 @@ with tab1:
                         with left_card:
                             st.markdown(
                                 f"""
-                                <div class="cart-barcode">{item['barcode']}</div>
                                 <div class="cart-branch">{item['recipient_name']}</div>
                                 <div class="cart-detail">
-                                    {item['product_name']} · {item['width']}x{item['length']}x{item['height']} cm · {item['weight']} gr
+                                    Ürün: {item['product_name']}
                                 </div>
                                 """,
                                 unsafe_allow_html=True
