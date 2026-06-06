@@ -47,7 +47,17 @@ section[data-testid="stSidebar"] {
     max-width: 260px !important;
     border-right: 1px solid rgba(255,255,255,0.06);
 }
-
+section[data-testid="stSidebar"]::before {
+    content: "🚚  PTT ENTEGRASYON\A     Barkod Yönetim Sistemi";
+    white-space: pre-line;
+    display: block;
+    color: white;
+    font-weight: 800;
+    font-size: 16px;
+    line-height: 1.25;
+    padding: 18px 18px 14px 18px;
+    border-bottom: 1px solid rgba(255,255,255,.08);
+}
 section[data-testid="stSidebar"] * {
     color: #cbd5e1 !important;
     font-size: 14px !important;
@@ -278,40 +288,7 @@ if not st.session_state.logged_in:
     login_page()
     st.stop()
 
-st.sidebar.markdown(
-    """
-    <div style="
-        display:flex;
-        align-items:center;
-        gap:12px;
-        padding:12px 8px 20px 8px;
-        margin-bottom:10px;
-        border-bottom:1px solid rgba(255,255,255,.08);
-    ">
-        <div style="
-            width:46px;
-            height:46px;
-            border-radius:12px;
-            background:#2563eb;
-            display:flex;
-            align-items:center;
-            justify-content:center;
-            font-size:24px;
-        ">
-            🚚
-        </div>
-        <div>
-            <div style="color:white;font-size:18px;font-weight:800;line-height:1.1;">
-                PTT ENTEGRASYON
-            </div>
-            <div style="color:#94a3b8;font-size:12px;">
-                Barkod Yönetim Sistemi
-            </div>
-        </div>
-    </div>
-    """,
-    unsafe_allow_html=True
-)
+
 
 pages = [
     st.Page("pages/08_Dashboard.py", title="Dashboard", icon="📊"),
