@@ -20,14 +20,17 @@ if not admin:
     db.add(User(username="admin", password="admin123", role="Admin"))
     db.commit()
 
+token_user = st.query_params.get("user", "")
+token_role = st.query_params.get("role", "")
+
 if "logged_in" not in st.session_state:
-    st.session_state.logged_in = False
+    st.session_state.logged_in = bool(token_user)
 
 if "username" not in st.session_state:
-    st.session_state.username = ""
+    st.session_state.username = token_user
 
 if "role" not in st.session_state:
-    st.session_state.role = ""
+    st.session_state.role = token_role
 
 if not st.session_state.logged_in:
     st.markdown("""
@@ -54,6 +57,10 @@ if not st.session_state.logged_in:
             st.session_state.logged_in = True
             st.session_state.username = user.username
             st.session_state.role = user.role
+
+            st.query_params["user"] = user.username
+            st.query_params["role"] = user.role
+
             st.rerun()
         else:
             st.error("Hatalı kullanıcı adı veya şifre.")
@@ -66,6 +73,9 @@ if st.sidebar.button("Çıkış Yap"):
     st.session_state.logged_in = False
     st.session_state.username = ""
     st.session_state.role = ""
+
+    st.query_params.clear()
+
     st.rerun()
 
 pages = [
