@@ -1,116 +1,251 @@
-import os
-import shutil
+import sqlite3
+from io import BytesIO
+
+import pandas as pd
 import streamlit as st
+
 from utils.auth import require_login
+from database.database import SessionLocal
+from database.models import (
+    User,
+    Branch,
+    Barcode,
+    Shipment,
+    ProductDimension
+)
 
 require_login()
-st.set_page_config(layout="wide", initial_sidebar_state="expanded")
+
+db = SessionLocal()
 
 st.markdown("""
 <style>
-html, body, div, span, p, label, input, textarea, button {
-    font-size: 12px !important;
-}
 .block-container {
-    padding-top: 1rem !important;
-    padding-left: 1.2rem !important;
-    padding-right: 1.2rem !important;
-    max-width: 100% !important;
+    padding-top: 1.6rem !important;
 }
-h1 {
-    font-size: 22px !important;
-    margin-bottom: 8px !important;
+
+.page-subtitle {
+    color: #64748b;
+    font-size: 13px;
 }
-h2, h3 {
-    font-size: 15px !important;
+
+.clean-title {
+    font-size: 17px;
+    font-weight: 800;
+    color: #0f172a;
+    margin-bottom: 14px;
 }
-section[data-testid="stSidebar"] {
-    min-width: 220px !important;
-    max-width: 220px !important;
-}
-section[data-testid="stSidebar"] * {
-    font-size: 12px !important;
-}
-button[kind="header"] {
-    display: none !important;
-}
-.stButton button,
-.stDownloadButton button,
-button {
-    font-size: 12px !important;
-    padding: 0.22rem 0.45rem !important;
-    min-height: 28px !important;
-}
-.stTextInput input,
-.stTextArea textarea,
-.stNumberInput input,
-.stSelectbox div,
-.stFileUploader label {
-    font-size: 12px !important;
-}
-div[data-testid="stMarkdownContainer"] p {
-    font-size: 12px !important;
-    margin-bottom: 0.2rem !important;
-}
-hr {
-    margin-top: 0.5rem !important;
-    margin-bottom: 0.5rem !important;
+
+.download-card {
+    padding: 12px;
+    border-radius: 16px;
+    border: 1px solid #dbe3ef;
+    background: #f8fafc;
 }
 </style>
 """, unsafe_allow_html=True)
 
 st.title("Yedekleme")
 
-DB_FILE = "ptt_kargo.db"
+st.markdown(
+    '<div class="page-subtitle">Sistem verilerini dışa aktarın ve yedekleyin.</div>',
+    unsafe_allow_html=True
+)
 
-st.subheader("Veritabanı Yedeği İndir")
+st.write("")
 
-if os.path.exists(DB_FILE):
 
-    with open(DB_FILE, "rb") as f:
+def dataframe_download(data):
+    output = BytesIO()
+
+    pd.DataFrame(data).to_excel(
+        output,
+        index=False
+    )
+
+    output.seek(0)
+
+    return output
+
+
+with st.container(border=True):
+
+    st.markdown(
+        '<div class="clean-title">Veritabanı Yedeği</div>',
+        unsafe_allow_html=True
+    )
+
+    try:
+        with open("database/database.db", "rb") as f:
+            st.download_button(
+                "💾 Veritabanını İndir",
+                f.read(),
+                file_name="ptt_panel_backup.db",
+                mime="application/octet-stream",
+                use_container_width=True
+            )
+    except:
+        st.warning("Veritabanı dosyası bulunamadı.")
+
+st.write("")
+
+col1, col2 = st.columns(2)
+
+with col1:
+
+    with st.container(border=True):
+
+        st.markdown(
+            '<div class="clean-title">Gönderiler</div>',
+            unsafe_allow_html=True
+        )
+
+        shipments = db.query(Shipment).all()
+
+        rows = []
+
+        for x in shipments:
+            rows.append({
+                "Takip No": x.tracking_number,
+                "Barkod": x.barcode,
+                "Şube Kodu": x.branch_code,
+                "Şube Adı": x.branch_name,
+                "Alıcı": x.recipient_name,
+                "Adres": x.address,
+                "İlçe": x.district,
+                "İl": x.city,
+                "Telefon": x.phone,
+                "Ürün": x.product_name,
+                "En": x.width,
+                "Boy": x.length,
+                "Yükseklik": x.height,
+                "Ağırlık": x.weight,
+                "Kullanıcı": x.created_by,
+                "Yazdırıldı": x.is_printed
+            })
 
         st.download_button(
-            "Veritabanını İndir",
-            f,
-            file_name="ptt_kargo_yedek.db",
-            mime="application/octet-stream",
+            "📦 Gönderileri Excel İndir",
+            dataframe_download(rows),
+            file_name="gonderiler.xlsx",
+            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
             use_container_width=True
         )
 
-else:
-    st.error("Veritabanı dosyası bulunamadı.")
+with col2:
 
-st.divider()
+    with st.container(border=True):
 
-st.subheader("Veritabanı Yedeği Yükle")
+        st.markdown(
+            '<div class="clean-title">Şubeler</div>',
+            unsafe_allow_html=True
+        )
 
-uploaded_file = st.file_uploader(
-    "Yedek DB Dosyası Yükle",
-    type=["db"]
-)
+        branches = db.query(Branch).all()
 
-if uploaded_file is not None:
+        rows = []
 
-    if st.button("Yedeği Geri Yükle", use_container_width=True):
+        for x in branches:
+            rows.append({
+                "Şube Kodu": x.branch_code,
+                "Şube Adı": x.branch_name,
+                "Adres": x.address,
+                "İlçe": x.district,
+                "İl": x.city
+            })
 
-        with open(DB_FILE, "wb") as f:
-            f.write(uploaded_file.read())
+        st.download_button(
+            "🏢 Şubeleri Excel İndir",
+            dataframe_download(rows),
+            file_name="subeler.xlsx",
+            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            use_container_width=True
+        )
 
-        st.success("Yedek geri yüklendi. Sayfayı yenileyin.")
+st.write("")
 
-st.divider()
+col3, col4 = st.columns(2)
 
-st.subheader("Manuel Kopya Oluştur")
+with col3:
 
-if st.button("Sunucuda Yedek Kopya Oluştur", use_container_width=True):
+    with st.container(border=True):
 
-    if os.path.exists(DB_FILE):
+        st.markdown(
+            '<div class="clean-title">Barkodlar</div>',
+            unsafe_allow_html=True
+        )
 
-        backup_file = "ptt_kargo_backup.db"
+        barcodes = db.query(Barcode).all()
 
-        shutil.copy(DB_FILE, backup_file)
+        rows = []
 
-        st.success("Sunucuda yedek oluşturuldu.")
+        for x in barcodes:
+            rows.append({
+                "Barkod": x.barcode,
+                "Kullanıldı": x.is_used
+            })
 
-    else:
-        st.error("Veritabanı dosyası bulunamadı.")
+        st.download_button(
+            "🏷️ Barkodları Excel İndir",
+            dataframe_download(rows),
+            file_name="barkodlar.xlsx",
+            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            use_container_width=True
+        )
+
+with col4:
+
+    with st.container(border=True):
+
+        st.markdown(
+            '<div class="clean-title">Ürün Ölçüleri</div>',
+            unsafe_allow_html=True
+        )
+
+        products = db.query(ProductDimension).all()
+
+        rows = []
+
+        for x in products:
+            rows.append({
+                "Ürün": x.product_name,
+                "En": x.width,
+                "Boy": x.length,
+                "Yükseklik": x.height,
+                "Ağırlık": x.weight
+            })
+
+        st.download_button(
+            "📐 Ürün Ölçülerini İndir",
+            dataframe_download(rows),
+            file_name="urun_olculeri.xlsx",
+            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            use_container_width=True
+        )
+
+st.write("")
+
+with st.container(border=True):
+
+    st.markdown(
+        '<div class="clean-title">Kullanıcılar</div>',
+        unsafe_allow_html=True
+    )
+
+    users = db.query(User).all()
+
+    rows = []
+
+    for x in users:
+        rows.append({
+            "Kullanıcı": x.username,
+            "Rol": x.role
+        })
+
+    st.download_button(
+        "👥 Kullanıcıları İndir",
+        dataframe_download(rows),
+        file_name="kullanicilar.xlsx",
+        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        use_container_width=True
+    )
