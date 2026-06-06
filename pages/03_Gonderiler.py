@@ -1,5 +1,15 @@
 import streamlit as st
 import pandas as pd
+from reportlab.pdfbase import pdfmetrics
+from reportlab.pdfbase.ttfonts import TTFont
+pdfmetrics.registerFont(
+    TTFont("DejaVu", "fonts/DejaVuSans.ttf")
+)
+
+pdfmetrics.registerFont(
+    TTFont("DejaVu-Bold", "fonts/DejaVuSans-Bold.ttf")
+)
+
 from io import BytesIO
 from datetime import datetime
 
@@ -68,7 +78,7 @@ def create_excel(shipments):
     return output
 
 
-def draw_wrapped(c, text, x, y, max_chars, max_lines, font="Helvetica", size=8, gap=9):
+def draw_wrapped(c, text, x, y, max_chars, max_lines, font="DejaVu", size=8, gap=9):
     text = str(text or "").strip()
     words = text.split()
     lines = []
@@ -106,10 +116,10 @@ def create_pdf(shipments):
 
         c.rect(4 * mm, 4 * mm, 92 * mm, 102 * mm)
 
-        c.setFont("Helvetica-Bold", 13)
+        c.setFont("DejaVu-Bold", 13)
         c.drawCentredString(50 * mm, 101 * mm, "PTT GENEL MÜDÜRLÜĞÜ KARGO ETİKETİ")
 
-        c.setFont("Helvetica-Bold", 6.2)
+        c.setFont("DejaVu-Bold", 6.2)
         c.drawCentredString(
             50 * mm,
             96.5 * mm,
@@ -121,25 +131,25 @@ def create_pdf(shipments):
         c.rect(4 * mm, 77 * mm, 64 * mm, 16 * mm)
         c.rect(68 * mm, 77 * mm, 28 * mm, 16 * mm)
 
-        c.setFont("Helvetica-Bold", 6.5)
+        c.setFont("DejaVu-Bold", 6.5)
         c.drawString(6 * mm, 90 * mm, "GÖNDERİCİ")
 
-        c.setFont("Helvetica", 6.5)
+        c.setFont("DejaVu", 6.5)
         c.drawString(6 * mm, 86.5 * mm, "Ziraat Katılım Bankası A.Ş. (Hadımköy Lojistik Merkezi)")
         c.drawString(6 * mm, 83 * mm, "Ömerli Mah. Nusret Cad. No:21 (2. Bodrum Kat)")
         c.drawString(6 * mm, 79.5 * mm, "Arnavutköy / İstanbul")
 
-        c.setFont("Helvetica-Bold", 6.5)
+        c.setFont("DejaVu-Bold", 6.5)
         c.drawString(70 * mm, 90 * mm, "KAB. MRKZ")
 
-        c.setFont("Helvetica", 6.5)
+        c.setFont("DejaVu", 6.5)
         c.drawString(70 * mm, 86.5 * mm, "Avrupa Yakası K.I.M")
         c.drawString(70 * mm, 83 * mm, "KAB.T: K.at.Zira")
         c.drawString(70 * mm, 79.5 * mm, "S.NO: 1")
 
         c.rect(4 * mm, 50 * mm, 92 * mm, 27 * mm)
 
-        c.setFont("Helvetica-Bold", 6.5)
+        c.setFont("DejaVu-Bold", 6.5)
         c.drawString(6 * mm, 73.5 * mm, "ALICI")
 
         draw_wrapped(
@@ -149,7 +159,7 @@ def create_pdf(shipments):
             69.5 * mm,
             max_chars=42,
             max_lines=2,
-            font="Helvetica-Bold",
+            font="DejaVu-Bold",
             size=10,
             gap=10
         )
@@ -161,12 +171,12 @@ def create_pdf(shipments):
             61 * mm,
             max_chars=58,
             max_lines=2,
-            font="Helvetica-Bold",
+            font="DejaVu-Bold",
             size=7.6,
             gap=8
         )
 
-        c.setFont("Helvetica-Bold", 9.5)
+        c.setFont("DejaVu-Bold", 9.5)
         c.drawString(
             6 * mm,
             52.5 * mm,
@@ -178,16 +188,16 @@ def create_pdf(shipments):
         c.rect(55 * mm, 39 * mm, 23 * mm, 11 * mm)
         c.rect(78 * mm, 39 * mm, 18 * mm, 11 * mm)
 
-        c.setFont("Helvetica-Bold", 6)
+        c.setFont("DejaVu-Bold", 6)
         c.drawString(6 * mm, 47 * mm, "TARİH")
         c.drawString(29 * mm, 47 * mm, "EBAT/DESİ")
         c.drawString(57 * mm, 47 * mm, "AĞIRLIK (GR)")
         c.drawString(80 * mm, 47 * mm, "ŞUBE KODU")
 
-        c.setFont("Helvetica-Bold", 9.5)
+        c.setFont("DejaVu-Bold", 9.5)
         c.drawCentredString(15.5 * mm, 42 * mm, datetime.now().strftime("%d.%m.%Y"))
 
-        c.setFont("Helvetica-Bold", 6.5)
+        c.setFont("DejaVu-Bold", 6.5)
         c.drawCentredString(
             41 * mm,
             43.2 * mm,
@@ -195,25 +205,25 @@ def create_pdf(shipments):
         )
         c.drawCentredString(41 * mm, 40.3 * mm, "(Ds:1)")
 
-        c.setFont("Helvetica-Bold", 10.5)
+        c.setFont("DejaVu-Bold", 10.5)
         c.drawCentredString(66.5 * mm, 42 * mm, str(int(item.weight or 0)))
 
-        c.setFont("Helvetica-Bold", 9.5)
+        c.setFont("DejaVu-Bold", 9.5)
         c.drawCentredString(87 * mm, 42 * mm, str(item.branch_code or ""))
 
         c.rect(4 * mm, 27 * mm, 56 * mm, 12 * mm)
         c.rect(60 * mm, 27 * mm, 18 * mm, 12 * mm)
         c.rect(78 * mm, 27 * mm, 18 * mm, 12 * mm)
 
-        c.setFont("Helvetica-Bold", 6)
+        c.setFont("DejaVu-Bold", 6)
         c.drawString(6 * mm, 36 * mm, "ÜRÜN İÇERİĞİ")
         c.drawString(62 * mm, 36 * mm, "EK HİZMETLER")
         c.drawString(80 * mm, 36 * mm, "BEYAN DEĞERİ")
 
-        c.setFont("Helvetica-Bold", 8.5)
+        c.setFont("DejaVu-Bold", 8.5)
         c.drawString(6 * mm, 31.5 * mm, kisalt(item.product_name, 34))
 
-        c.setFont("Helvetica", 8.5)
+        c.setFont("DejaVu", 8.5)
         c.drawCentredString(69 * mm, 31.5 * mm, "-")
         c.drawCentredString(87 * mm, 31.5 * mm, "-")
 
@@ -229,7 +239,7 @@ def create_pdf(shipments):
 
         barcode.drawOn(c, 18 * mm, 9 * mm)
 
-        c.setFont("Helvetica-Bold", 13)
+        c.setFont("DejaVu-Bold", 13)
         c.drawCentredString(50 * mm, 5.8 * mm, barcode_value)
 
         item.is_printed = True
