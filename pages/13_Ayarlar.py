@@ -10,7 +10,7 @@ if not is_admin():
     st.error("Bu sayfaya sadece Admin erişebilir.")
     st.stop()
 
-Base.metadata.create_all(bind=engine)
+
 
 db = SessionLocal()
 
