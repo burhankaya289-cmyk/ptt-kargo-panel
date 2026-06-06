@@ -703,17 +703,10 @@ else:
                     )
                     st.rerun()
 
-            with d2:
-                st.download_button(
-                    "PDF",
-                    create_pdf([item]),
-                    file_name=f"etiket_{item.tracking_number}.pdf",
-                    mime="application/pdf",
-                    key=f"pdf_{item.id}",
-                    use_container_width=True,
-                    on_click=mark_printed,
-                    args=([item.id],)
-                )
+           with d2:
+    if st.button("Seç", key=f"pdf_sec_{item.id}", use_container_width=True):
+        st.session_state[f"sec_{item.id}"] = True
+        st.rerun()
 
             with d3:
                 if st.button("Düzenle", key=f"duzenle_{item.id}", use_container_width=True):
