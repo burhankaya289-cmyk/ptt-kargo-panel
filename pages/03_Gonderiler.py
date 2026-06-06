@@ -127,12 +127,12 @@ h2, h3 {
 }
 
 [data-testid="stVerticalBlockBorderWrapper"] {
-    padding-top: 12px !important;
-    padding-bottom: 12px !important;
-}
+    border-radius: 18px !important;
     background: #ffffff !important;
     border: 1px solid #dbe3ef !important;
     box-shadow: 0 12px 34px rgba(15,23,42,0.05) !important;
+    padding-top: 12px !important;
+    padding-bottom: 12px !important;
 }
 
 .stTextInput label,
@@ -704,11 +704,10 @@ else:
         status = get_status(item)
 
         with st.container(border=True):
-
             c0, c1, c2, c3, c4, c5, c6 = st.columns(
-    [0.25, 3.4, 1.0, 1.0, 1.35, 1.25, 2.3],
-    vertical_alignment="center"
-)
+                [0.25, 3.4, 1.0, 1.0, 1.35, 1.25, 2.0],
+                vertical_alignment="center"
+            )
 
             with c0:
                 st.checkbox("", key=f"sec_{item.id}")
@@ -753,36 +752,32 @@ else:
                 )
 
             with c5:
-                st.markdown(
-                    '<div class="ship-label">Durum</div>',
-                    unsafe_allow_html=True
-                )
+                st.markdown('<div class="ship-label">Durum</div>', unsafe_allow_html=True)
                 st.markdown(status_html(status), unsafe_allow_html=True)
 
             with c6:
-    b1, b2, b3 = st.columns([1, 1, 1])
+                b1, b2, b3 = st.columns([1, 1, 1])
 
-    with b1:
-        if st.button("Seç", key=f"sec_btn_{item.id}", use_container_width=True):
-            st.session_state[f"sec_{item.id}"] = True
-            st.rerun()
+                with b1:
+                    if st.button("Seç", key=f"sec_btn_{item.id}", use_container_width=True):
+                        st.session_state[f"sec_{item.id}"] = True
+                        st.rerun()
 
-    with b2:
-        if st.button("Düzenle", key=f"duzenle_{item.id}", use_container_width=True):
-            st.session_state[f"edit_{item.id}"] = not st.session_state.get(
-                f"edit_{item.id}", False
-            )
-            st.rerun()
+                with b2:
+                    if st.button("Düzenle", key=f"duzenle_{item.id}", use_container_width=True):
+                        st.session_state[f"edit_{item.id}"] = not st.session_state.get(
+                            f"edit_{item.id}", False
+                        )
+                        st.rerun()
 
-    with b3:
-        if st.button("Sil", key=f"sil_{item.id}", use_container_width=True):
-            db.delete(item)
-            db.commit()
-            st.rerun()
+                with b3:
+                    if st.button("Sil", key=f"sil_{item.id}", use_container_width=True):
+                        db.delete(item)
+                        db.commit()
+                        st.rerun()
 
             if st.session_state.get(f"edit_{item.id}", False):
                 with st.form(f"edit_form_{item.id}"):
-
                     e1, e2 = st.columns(2)
 
                     with e1:
