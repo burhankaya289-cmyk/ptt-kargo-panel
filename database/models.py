@@ -59,7 +59,6 @@ class Shipment(Base):
     id = Column(Integer, primary_key=True)
 
     barcode = Column(String)
-
     tracking_number = Column(String)
 
     branch_code = Column(String)
