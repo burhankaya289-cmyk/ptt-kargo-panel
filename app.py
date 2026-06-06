@@ -180,7 +180,9 @@ hr {
 </style>
 """, unsafe_allow_html=True)
 
-Base.metadata.create_all(bind=engine)
+if "db_initialized" not in st.session_state:
+    Base.metadata.create_all(bind=engine)
+    st.session_state.db_initialized = True
 
 db = SessionLocal()
 
