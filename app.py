@@ -12,12 +12,10 @@ st.set_page_config(
 
 st.markdown("""
 <style>
-/* GENEL ARKA PLAN */
 .stApp {
     background: #f6f9fc !important;
 }
 
-/* ANA ALAN */
 .block-container {
     padding-top: 2rem !important;
     padding-left: 2.2rem !important;
@@ -25,13 +23,11 @@ st.markdown("""
     max-width: 100% !important;
 }
 
-/* GENEL FONT */
 html, body, div, span, p, label, input, textarea, button {
     font-size: 13px !important;
     font-family: Inter, "Segoe UI", Arial, sans-serif !important;
 }
 
-/* BAŞLIKLAR */
 h1 {
     font-size: 30px !important;
     font-weight: 800 !important;
@@ -45,7 +41,6 @@ h2, h3 {
     color: #0f172a !important;
 }
 
-/* SOL MENÜ */
 section[data-testid="stSidebar"] {
     background: linear-gradient(180deg, #071426 0%, #081b33 100%) !important;
     min-width: 260px !important;
@@ -58,18 +53,16 @@ section[data-testid="stSidebar"] * {
     font-size: 14px !important;
 }
 
-/* STREAMLIT SIDEBAR ÜST BOŞLUK */
 section[data-testid="stSidebar"] > div {
-    padding-top: 1.2rem !important;
+    padding-top: 1rem !important;
 }
 
-/* SIDEBAR BAŞLIK KARTI */
 .sidebar-logo {
     display: flex;
     align-items: center;
     gap: 12px;
-    padding: 12px 10px 20px 10px;
-    margin-bottom: 12px;
+    padding: 8px 6px 16px 6px;
+    margin-bottom: 8px;
 }
 
 .sidebar-icon {
@@ -98,7 +91,6 @@ section[data-testid="stSidebar"] > div {
     margin-top: 2px;
 }
 
-/* SIDEBAR LINKLER */
 section[data-testid="stSidebar"] a {
     border-radius: 12px !important;
     padding: 9px 12px !important;
@@ -118,7 +110,6 @@ section[data-testid="stSidebar"] a[aria-current="page"] {
     font-weight: 700 !important;
 }
 
-/* SIDEBAR BUTON */
 section[data-testid="stSidebar"] .stButton button {
     background: transparent !important;
     color: #cbd5e1 !important;
@@ -127,13 +118,11 @@ section[data-testid="stSidebar"] .stButton button {
     padding: 8px 4px !important;
 }
 
-/* KART TASARIMI */
 div[data-testid="stForm"],
 div[data-testid="stVerticalBlockBorderWrapper"] {
     border-radius: 18px !important;
 }
 
-/* INPUTLAR */
 .stTextInput input,
 .stTextArea textarea,
 .stNumberInput input,
@@ -145,7 +134,6 @@ div[data-testid="stVerticalBlockBorderWrapper"] {
     font-size: 13px !important;
 }
 
-/* BUTONLAR */
 .stButton button,
 .stDownloadButton button {
     border-radius: 12px !important;
@@ -155,24 +143,20 @@ div[data-testid="stVerticalBlockBorderWrapper"] {
     border: 1px solid #dbe3ef !important;
 }
 
-/* PRIMARY GİBİ MAVİ BUTON EFEKTİ */
 .stButton button:hover,
 .stDownloadButton button:hover {
     border-color: #1672f3 !important;
     color: #1672f3 !important;
 }
 
-/* ALERTLER */
 [data-testid="stAlert"] {
     border-radius: 14px !important;
 }
 
-/* SIDEBAR COLLAPSE GİZLE */
 button[kind="header"] {
     display: none !important;
 }
 
-/* SAĞ ÜST STREAMLIT MENÜLERİNİ BİRAZ SAKLA */
 #MainMenu {
     visibility: hidden;
 }
@@ -181,13 +165,11 @@ footer {
     visibility: hidden;
 }
 
-/* SAYFA BOŞLUKLARI */
 hr {
     margin-top: 0.7rem !important;
     margin-bottom: 0.7rem !important;
 }
 
-/* LOGIN */
 .login-card {
     background: white;
     border: 1px solid #dbe3ef;
@@ -232,6 +214,7 @@ def login_page():
     section[data-testid="stSidebar"] {
         display: none !important;
     }
+
     .block-container {
         max-width: 560px !important;
         padding-top: 5rem !important;
@@ -254,7 +237,7 @@ def login_page():
                 font-size:26px;
                 font-weight:800;
                 margin-bottom:12px;
-            ">▣</div>
+            ">📦</div>
             <h1 style="font-size:28px !important;">PTT Kargo Panel Giriş</h1>
             <p style="color:#64748b;">Yönetim paneline erişmek için giriş yapın.</p>
         </div>
@@ -289,38 +272,18 @@ if not st.session_state.logged_in:
     login_page()
     st.stop()
 
-section[data-testid="stSidebar"]::before {
-    content: "▣  Barkod Panel\\A     Yönetim Sistemi";
-    white-space: pre-line;
-    display: block;
-    color: white;
-    font-weight: 800;
-    font-size: 16px;
-    line-height: 1.2;
-    padding: 22px 22px 18px 22px;
-}
-
-st.sidebar.markdown("---")
-
 st.sidebar.markdown(
-    f"""
-    <div style="position:fixed; bottom:70px; left:24px;">
-        <div style="color:white; font-weight:800; font-size:13px;">{st.session_state.username}</div>
-        <div style="color:#94a3b8; font-size:12px;">{st.session_state.role}</div>
+    """
+    <div class="sidebar-logo">
+        <div class="sidebar-icon">📦</div>
+        <div>
+            <div class="sidebar-title">Barkod Panel</div>
+            <div class="sidebar-sub">Yönetim Sistemi</div>
+        </div>
     </div>
     """,
     unsafe_allow_html=True
 )
-
-if st.sidebar.button("↪ Çıkış"):
-    st.session_state.logged_in = False
-    st.session_state.username = ""
-    st.session_state.role = ""
-
-    st.query_params.clear()
-
-    login_page()
-    st.stop()
 
 pages = [
     st.Page("pages/08_Dashboard.py", title="Dashboard", icon="📊"),
@@ -338,4 +301,27 @@ if str(st.session_state.role).strip().lower() == "admin":
     )
 
 pg = st.navigation(pages)
+
+st.sidebar.markdown("---")
+
+st.sidebar.markdown(
+    f"""
+    <div style="position:fixed; bottom:72px; left:24px;">
+        <div style="color:white; font-weight:800; font-size:13px;">{st.session_state.username}</div>
+        <div style="color:#94a3b8; font-size:12px;">{st.session_state.role}</div>
+    </div>
+    """,
+    unsafe_allow_html=True
+)
+
+if st.sidebar.button("↪ Çıkış"):
+    st.session_state.logged_in = False
+    st.session_state.username = ""
+    st.session_state.role = ""
+
+    st.query_params.clear()
+
+    login_page()
+    st.stop()
+
 pg.run()
