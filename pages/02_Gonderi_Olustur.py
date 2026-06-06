@@ -361,10 +361,11 @@ with tab1:
             st.markdown('<div class="clean-title">Alıcı (Şube)</div>', unsafe_allow_html=True)
 
             branch_search = st.text_input(
-                "Şube kodu veya adı yazın",
-                placeholder="Şube kodu veya adı yazın...",
-                key="branch_input"
-            )
+    "Şube kodu veya adı yazın",
+    value=st.session_state.get("selected_branch_label", ""),
+    placeholder="Şube kodu veya adı yazın...",
+    key="branch_input"
+)
 
             selected_branch = branch_exact(branch_search)
 
@@ -393,7 +394,7 @@ with tab1:
                             st.markdown('<div class="suggestion-button">', unsafe_allow_html=True)
 
                             if st.button(label, key=f"branch_{b.id}", use_container_width=True):
-                                st.session_state.branch_input = label
+                                st.session_state.selected_branch_label = label
                                 st.rerun()
 
                             st.markdown('</div>', unsafe_allow_html=True)
@@ -403,11 +404,12 @@ with tab1:
             st.markdown('<div class="clean-title">Ürün Bilgileri</div>', unsafe_allow_html=True)
 
             product_search = st.text_input(
-                "Ürün İçeriği",
-                placeholder="Ürün içeriği yazın...",
-                key="product_input",
-                max_chars=30
-            )
+    "Ürün İçeriği",
+    value=st.session_state.get("selected_product_label", ""),
+    placeholder="Ürün içeriği yazın...",
+    key="product_input",
+    max_chars=30
+)
 
             selected_product = product_exact(product_search)
 
@@ -433,7 +435,7 @@ with tab1:
                             st.markdown('<div class="suggestion-button">', unsafe_allow_html=True)
 
                             if st.button(p.product_name, key=f"product_{p.id}", use_container_width=True):
-                                st.session_state.product_input = p.product_name
+                                st.session_state.selected_product_label = p.product_name
                                 st.rerun()
 
                             st.markdown('</div>', unsafe_allow_html=True)
