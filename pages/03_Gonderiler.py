@@ -663,7 +663,7 @@ else:
         status = get_status(item)
 
         with st.container(border=True):
-            c0, c1, c2, c3, c4 = st.columns([0.35, 2.4, 1.5, 1.35, 1.2])
+            c0, c1, c2, c3, c4 = st.columns([0.25, 3.2, 1.2, 1.4, 1.4])
 
             with c0:
                 st.checkbox("", key=f"sec_{item.id}")
@@ -693,7 +693,7 @@ else:
             with c4:
                 st.markdown(status_html(status), unsafe_allow_html=True)
 
-            d1, d2, d3, d4, d5 = st.columns([1, 1, 1, 1, 5])
+            d1, d2, d3, d4, d5 = st.columns([1, 1, 1, 1, 7])
 
             with d1:
                 if st.button("Detay", key=f"detay_{item.id}", use_container_width=True):
