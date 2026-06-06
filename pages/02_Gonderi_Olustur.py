@@ -111,11 +111,21 @@ div[data-testid="stButton"] button[kind="primary"] {
     color: #0f172a;
     margin-bottom: 18px;
 }
-.suggestion-title {
-    font-size: 12px;
-    color: #64748b;
-    margin-top: -4px;
-    margin-bottom: 6px;
+.qty-box {
+    height: 42px;
+    border: 1px solid #dbe3ef;
+    background: #f8fafc;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 800;
+    color: #0f172a;
+}
+.suggestion-button button {
+    justify-content: flex-start !important;
+    text-align: left !important;
+    background: #f8fafc !important;
 }
 </style>
 """, unsafe_allow_html=True)
@@ -182,75 +192,97 @@ def get_available_barcodes(count):
     return result
 
 
-def branch_exact(search_text):
-    search_text = norm(search_text)
+def all_branches():
+    return (
+        db.query(Branch)
+        .order_by(Branch.branch_code.asc())
+        .all()
+    )
 
-    if not search_text:
+
+def all_products():
+    return (
+        db.query(ProductDimension)
+        .order_by(ProductDimension.product_name.asc())
+        .all()
+    )
+
+
+def branch_exact(search_text):
+    search_text_clean = temizle(search_text)
+    search_text_norm = norm(search_text)
+
+    if not search_text_norm:
         return None
 
-    branches = db.query(Branch).all()
+    branches = all_branches()
 
     for b in branches:
-        if norm(b.branch_code) == search_text or norm(b.branch_name) == search_text:
+        full_label = f"{b.branch_code} - {b.branch_name}"
+
+        if (
+            norm(b.branch_code) == search_text_norm
+            or norm(b.branch_name) == search_text_norm
+            or norm(full_label) == search_text_norm
+        ):
             return b
 
     return None
 
 
 def branch_matches(search_text):
-    search_text = norm(search_text)
+    search_text_norm = norm(search_text)
 
-    if not search_text:
+    if not search_text_norm:
         return []
 
-    branches = db.query(Branch).order_by(Branch.branch_code.asc()).all()
+    branches = all_branches()
 
     result = []
 
     for b in branches:
-        code_match = norm(b.branch_code).startswith(search_text)
-        name_match = search_text in norm(b.branch_name)
+        full_label = f"{b.branch_code} - {b.branch_name}"
 
-        if code_match or name_match:
+        code_match = norm(b.branch_code).startswith(search_text_norm)
+        name_match = search_text_norm in norm(b.branch_name)
+        full_match = search_text_norm in norm(full_label)
+
+        if code_match or name_match or full_match:
             result.append(b)
 
-    return result[:6]
+    return result[:8]
 
 
 def product_exact(search_text):
-    search_text = norm(search_text)
+    search_text_norm = norm(search_text)
 
-    if not search_text:
+    if not search_text_norm:
         return None
 
-    products = db.query(ProductDimension).all()
+    products = all_products()
 
     for p in products:
-        if norm(p.product_name) == search_text:
+        if norm(p.product_name) == search_text_norm:
             return p
 
     return None
 
 
 def product_matches(search_text):
-    search_text = norm(search_text)
+    search_text_norm = norm(search_text)
 
-    if not search_text:
+    if not search_text_norm:
         return []
 
-    products = (
-        db.query(ProductDimension)
-        .order_by(ProductDimension.product_name.asc())
-        .all()
-    )
+    products = all_products()
 
     result = []
 
     for p in products:
-        if search_text in norm(p.product_name):
+        if search_text_norm in norm(p.product_name):
             result.append(p)
 
-    return result[:6]
+    return result[:8]
 
 
 def save_cart():
@@ -336,19 +368,6 @@ with tab1:
 
             selected_branch = branch_exact(branch_search)
 
-            if not selected_branch:
-                branch_suggestions = branch_matches(branch_search)
-
-                if branch_suggestions:
-                    st.markdown('<div class="suggestion-title">Seçmek için tıklayın</div>', unsafe_allow_html=True)
-
-                    for b in branch_suggestions:
-                        label = f"{b.branch_code} - {b.branch_name}"
-
-                        if st.button(label, key=f"branch_{b.id}", use_container_width=True):
-                            st.session_state.branch_input = label
-                            st.rerun()
-
             if selected_branch:
                 default_branch_code = selected_branch.branch_code
                 default_branch_name = selected_branch.branch_name
@@ -364,6 +383,21 @@ with tab1:
                 default_district = ""
                 default_city = ""
 
+                branch_suggestions = branch_matches(branch_search)
+
+                if branch_suggestions:
+                    for b in branch_suggestions:
+                        label = f"{b.branch_code} - {b.branch_name}"
+
+                        with st.container():
+                            st.markdown('<div class="suggestion-button">', unsafe_allow_html=True)
+
+                            if st.button(label, key=f"branch_{b.id}", use_container_width=True):
+                                st.session_state.branch_input = label
+                                st.rerun()
+
+                            st.markdown('</div>', unsafe_allow_html=True)
+
         with st.container(border=True):
 
             st.markdown('<div class="clean-title">Ürün Bilgileri</div>', unsafe_allow_html=True)
@@ -376,17 +410,6 @@ with tab1:
             )
 
             selected_product = product_exact(product_search)
-
-            if not selected_product:
-                product_suggestions = product_matches(product_search)
-
-                if product_suggestions:
-                    st.markdown('<div class="suggestion-title">Seçmek için tıklayın</div>', unsafe_allow_html=True)
-
-                    for p in product_suggestions:
-                        if st.button(p.product_name, key=f"product_{p.id}", use_container_width=True):
-                            st.session_state.product_input = p.product_name
-                            st.rerun()
 
             if selected_product:
                 product_name = selected_product.product_name
@@ -402,9 +425,22 @@ with tab1:
                 default_height = 0.0
                 default_weight = 0.0
 
+                product_suggestions = product_matches(product_search)
+
+                if product_suggestions:
+                    for p in product_suggestions:
+                        with st.container():
+                            st.markdown('<div class="suggestion-button">', unsafe_allow_html=True)
+
+                            if st.button(p.product_name, key=f"product_{p.id}", use_container_width=True):
+                                st.session_state.product_input = p.product_name
+                                st.rerun()
+
+                            st.markdown('</div>', unsafe_allow_html=True)
+
             st.markdown("**Adet**")
 
-            a1, a2, a3 = st.columns([1, 5, 1])
+            a1, a2, a3 = st.columns([1, 4, 1])
 
             with a1:
                 if st.button("−", use_container_width=True):
@@ -413,19 +449,17 @@ with tab1:
                     st.rerun()
 
             with a2:
-                adet = st.number_input(
-                    "Adet",
-                    min_value=1,
-                    value=int(st.session_state.adet),
-                    step=1,
-                    label_visibility="collapsed"
+                st.markdown(
+                    f'<div class="qty-box">{st.session_state.adet}</div>',
+                    unsafe_allow_html=True
                 )
-                st.session_state.adet = int(adet)
 
             with a3:
                 if st.button("+", use_container_width=True):
                     st.session_state.adet += 1
                     st.rerun()
+
+            adet = int(st.session_state.adet)
 
             m1, m2 = st.columns(2)
 
@@ -452,9 +486,9 @@ with tab1:
                     st.error("Ürün içeriği boş olamaz.")
 
                 else:
-                    available_barcodes = get_available_barcodes(int(adet))
+                    available_barcodes = get_available_barcodes(adet)
 
-                    if len(available_barcodes) < int(adet):
+                    if len(available_barcodes) < adet:
                         st.error(
                             f"Yetersiz barkod. İstenen: {adet}, Kalan: {len(available_barcodes)}"
                         )
