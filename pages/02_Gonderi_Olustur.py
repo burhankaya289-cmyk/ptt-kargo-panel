@@ -8,7 +8,6 @@ from database.models import Base, Branch, ProductDimension, Barcode, Shipment
 
 require_login()
 
-Base.metadata.create_all(bind=engine)
 
 db = SessionLocal()
 
