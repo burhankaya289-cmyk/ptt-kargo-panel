@@ -343,8 +343,8 @@ def draw_wrapped(c, text, x, y, max_chars, max_lines, font=None, size=8, gap=9):
 def create_pdf(shipments):
     output = BytesIO()
 
-    page_width = 100 * mm
-    page_height = 110 * mm
+    page_width = get_float_setting("label_width_mm") * mm
+    page_height = get_float_setting("label_height_mm") * mm
 
     c = canvas.Canvas(output, pagesize=(page_width, page_height))
 
@@ -353,14 +353,18 @@ def create_pdf(shipments):
 
         c.rect(4 * mm, 4 * mm, 92 * mm, 102 * mm)
 
-        c.setFont(PDF_FONT_BOLD, 13)
-        c.drawCentredString(50 * mm, 101 * mm, "PTT GENEL MÜDÜRLÜĞÜ KARGO ETİKETİ")
+        c.setFont(PDF_FONT_BOLD, get_float_setting("font_title"))
+        c.drawCentredString(
+            50 * mm,
+            101 * mm,
+            get_setting("pdf_title")
+        )
 
-        c.setFont(PDF_FONT_BOLD, 6.2)
+        c.setFont(PDF_FONT_BOLD, get_float_setting("font_permission"))
         c.drawCentredString(
             50 * mm,
             96.5 * mm,
-            "***PTT GENEL MÜDÜRLÜĞÜ'NÜN 08/03/2011 VE 1918 SAYILI İZNİYLE BASILMIŞTIR.***"
+            get_setting("pdf_permission_text")
         )
 
         c.line(4 * mm, 93 * mm, 96 * mm, 93 * mm)
@@ -368,25 +372,25 @@ def create_pdf(shipments):
         c.rect(4 * mm, 77 * mm, 64 * mm, 16 * mm)
         c.rect(68 * mm, 77 * mm, 28 * mm, 16 * mm)
 
-        c.setFont(PDF_FONT_BOLD, 6.5)
+        c.setFont(PDF_FONT_BOLD, get_float_setting("font_sender_label"))
         c.drawString(6 * mm, 90 * mm, "GÖNDERİCİ")
 
-        c.setFont(PDF_FONT, 6.5)
-        c.drawString(6 * mm, 86.5 * mm, "Ziraat Katılım Bankası A.Ş. (Hadımköy Lojistik Merkezi)")
-        c.drawString(6 * mm, 83 * mm, "Ömerli Mah. Nusret Cad. No:21 (2. Bodrum Kat)")
-        c.drawString(6 * mm, 79.5 * mm, "Arnavutköy / İstanbul")
+        c.setFont(PDF_FONT, get_float_setting("font_sender_text"))
+        c.drawString(6 * mm, 86.5 * mm, get_setting("sender_name"))
+        c.drawString(6 * mm, 83 * mm, get_setting("sender_address_1"))
+        c.drawString(6 * mm, 79.5 * mm, get_setting("sender_address_2"))
 
-        c.setFont(PDF_FONT_BOLD, 6.5)
+        c.setFont(PDF_FONT_BOLD, get_float_setting("font_sender_label"))
         c.drawString(70 * mm, 90 * mm, "KAB. MRKZ")
 
-        c.setFont(PDF_FONT, 6.5)
-        c.drawString(70 * mm, 86.5 * mm, "Avrupa Yakası K.I.M")
-        c.drawString(70 * mm, 83 * mm, "KAB.T: K.at.Zira")
-        c.drawString(70 * mm, 79.5 * mm, "S.NO: 1")
+        c.setFont(PDF_FONT, get_float_setting("font_sender_text"))
+        c.drawString(70 * mm, 86.5 * mm, get_setting("acceptance_center_1"))
+        c.drawString(70 * mm, 83 * mm, get_setting("acceptance_center_2"))
+        c.drawString(70 * mm, 79.5 * mm, get_setting("acceptance_center_3"))
 
         c.rect(4 * mm, 50 * mm, 92 * mm, 27 * mm)
 
-        c.setFont(PDF_FONT_BOLD, 6.5)
+        c.setFont(PDF_FONT_BOLD, get_float_setting("font_recipient_label"))
         c.drawString(6 * mm, 73.5 * mm, "ALICI")
 
         draw_wrapped(
@@ -397,7 +401,7 @@ def create_pdf(shipments):
             max_chars=42,
             max_lines=2,
             font=PDF_FONT_BOLD,
-            size=10,
+            size=get_float_setting("font_recipient_name"),
             gap=10
         )
 
@@ -409,19 +413,23 @@ def create_pdf(shipments):
             max_chars=58,
             max_lines=2,
             font=PDF_FONT_BOLD,
-            size=7.6,
+            size=get_float_setting("font_address"),
             gap=8
         )
 
-        c.setFont(PDF_FONT_BOLD, 9.5)
-        c.drawString(6 * mm, 52.5 * mm, kisalt(f"{item.district or ''} / {item.city or ''}", 45))
+        c.setFont(PDF_FONT_BOLD, get_float_setting("font_city"))
+        c.drawString(
+            6 * mm,
+            52.5 * mm,
+            kisalt(f"{item.district or ''} / {item.city or ''}", 45)
+        )
 
         c.rect(4 * mm, 39 * mm, 23 * mm, 11 * mm)
         c.rect(27 * mm, 39 * mm, 28 * mm, 11 * mm)
         c.rect(55 * mm, 39 * mm, 23 * mm, 11 * mm)
         c.rect(78 * mm, 39 * mm, 18 * mm, 11 * mm)
 
-        c.setFont(PDF_FONT_BOLD, 6)
+        c.setFont(PDF_FONT_BOLD, get_float_setting("font_box_label"))
         c.drawString(6 * mm, 47 * mm, "TARİH")
         c.drawString(29 * mm, 47 * mm, "EBAT/DESİ")
         c.drawString(57 * mm, 47 * mm, "AĞIRLIK (GR)")
@@ -444,15 +452,15 @@ def create_pdf(shipments):
         c.rect(60 * mm, 27 * mm, 18 * mm, 12 * mm)
         c.rect(78 * mm, 27 * mm, 18 * mm, 12 * mm)
 
-        c.setFont(PDF_FONT_BOLD, 6)
+        c.setFont(PDF_FONT_BOLD, get_float_setting("font_box_label"))
         c.drawString(6 * mm, 36 * mm, "ÜRÜN İÇERİĞİ")
         c.drawString(62 * mm, 36 * mm, "EK HİZMETLER")
         c.drawString(80 * mm, 36 * mm, "BEYAN DEĞERİ")
 
-        c.setFont(PDF_FONT_BOLD, 8.5)
+        c.setFont(PDF_FONT_BOLD, get_float_setting("font_product"))
         c.drawString(6 * mm, 31.5 * mm, kisalt(item.product_name, 34))
 
-        c.setFont(PDF_FONT, 8.5)
+        c.setFont(PDF_FONT, get_float_setting("font_product"))
         c.drawCentredString(69 * mm, 31.5 * mm, "-")
         c.drawCentredString(87 * mm, 31.5 * mm, "-")
 
@@ -462,13 +470,13 @@ def create_pdf(shipments):
 
         barcode = code128.Code128(
             barcode_value,
-            barHeight=17 * mm,
-            barWidth=0.68
+            barHeight=get_float_setting("barcode_height_mm") * mm,
+            barWidth=get_float_setting("barcode_width")
         )
 
         barcode.drawOn(c, 18 * mm, 9 * mm)
 
-        c.setFont(PDF_FONT_BOLD, 13)
+        c.setFont(PDF_FONT_BOLD, get_float_setting("font_barcode_text"))
         c.drawCentredString(50 * mm, 5.8 * mm, barcode_value)
 
         c.showPage()
