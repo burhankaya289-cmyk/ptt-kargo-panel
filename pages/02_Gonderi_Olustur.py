@@ -108,23 +108,34 @@ div[data-testid="stButton"] button[kind="primary"] {
 }
 
 .cart-item {
-    background: #f8fafc;
+    background: #ffffff;
     border: 1px solid #dbe3ef;
-    border-radius: 14px;
+    border-radius: 16px;
     padding: 14px 16px;
     margin-bottom: 12px;
+    box-shadow: 0 8px 22px rgba(15,23,42,0.04);
 }
 
-.cart-item-title {
+.cart-barcode {
+    font-size: 13px;
+    font-weight: 900;
+    color: #2563eb;
+    line-height: 1.2;
+}
+
+.cart-branch {
     font-size: 14px;
-    font-weight: 800;
+    font-weight: 900;
     color: #0f172a;
+    margin-top: 5px;
+    line-height: 1.25;
 }
 
-.cart-item-sub {
+.cart-detail {
     color: #64748b;
     font-size: 12px;
-    margin-top: 4px;
+    margin-top: 6px;
+    line-height: 1.3;
 }
 
 .clean-title {
@@ -719,22 +730,18 @@ with tab1:
                     unsafe_allow_html=True
                 )
 
-                        else:
+            else:
                 for index, item in enumerate(st.session_state.sepet):
 
                     with st.container(border=True):
-                        left_card, right_card = st.columns([5, 1.5])
+                        left_card, right_card = st.columns([5, 1.4], gap="small")
 
                         with left_card:
                             st.markdown(
                                 f"""
-                                <div style="font-size:15px;font-weight:900;color:#0f172a;margin-bottom:6px;">
-                                    {item['barcode']}
-                                </div>
-                                <div style="font-size:14px;font-weight:800;color:#0f172a;margin-bottom:6px;">
-                                    {item['recipient_name']}
-                                </div>
-                                <div style="color:#64748b;font-size:12px;">
+                                <div class="cart-barcode">{item['barcode']}</div>
+                                <div class="cart-branch">{item['recipient_name']}</div>
+                                <div class="cart-detail">
                                     {item['product_name']} · {item['width']}x{item['length']}x{item['height']} cm · {item['weight']} gr
                                 </div>
                                 """,
@@ -742,18 +749,26 @@ with tab1:
                             )
 
                         with right_card:
-                            b1, b2 = st.columns(2)
+                            edit_col, delete_col = st.columns(2, gap="small")
 
-                            with b1:
-                                if st.button("✏️", key=f"edit_{index}", use_container_width=True):
+                            with edit_col:
+                                if st.button(
+                                    "✏️",
+                                    key=f"edit_{index}",
+                                    use_container_width=True
+                                ):
                                     st.session_state[f"edit_mode_{index}"] = not st.session_state.get(
                                         f"edit_mode_{index}",
                                         False
                                     )
                                     st.rerun()
 
-                            with b2:
-                                if st.button("🗑️", key=f"delete_{index}", use_container_width=True):
+                            with delete_col:
+                                if st.button(
+                                    "🗑️",
+                                    key=f"delete_{index}",
+                                    use_container_width=True
+                                ):
                                     st.session_state.sepet.pop(index)
                                     st.rerun()
 
