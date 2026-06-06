@@ -127,7 +127,9 @@ h2, h3 {
 }
 
 [data-testid="stVerticalBlockBorderWrapper"] {
-    border-radius: 18px !important;
+    padding-top: 12px !important;
+    padding-bottom: 12px !important;
+}
     background: #ffffff !important;
     border: 1px solid #dbe3ef !important;
     box-shadow: 0 12px 34px rgba(15,23,42,0.05) !important;
@@ -258,22 +260,29 @@ h2, h3 {
 
 .ship-label {
     color: #64748b;
-    font-size: 12px;
+    font-size: 11px;
     font-weight: 800;
-    margin-bottom: 6px;
+    margin-bottom: 5px;
+    white-space: nowrap;
 }
 
 .ship-value {
     color: #0f172a;
-    font-size: 14px;
+    font-size: 13px;
     font-weight: 900;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .ship-branch {
     color: #0f172a;
-    font-size: 15px;
+    font-size: 14px;
     font-weight: 900;
-    margin-bottom: 8px;
+    margin-bottom: 10px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .ship-actions button {
@@ -697,9 +706,9 @@ else:
         with st.container(border=True):
 
             c0, c1, c2, c3, c4, c5, c6 = st.columns(
-                [0.25, 2.8, 1.1, 1.1, 1.4, 1.2, 2.5],
-                vertical_alignment="center"
-            )
+    [0.25, 3.4, 1.0, 1.0, 1.35, 1.25, 2.3],
+    vertical_alignment="center"
+)
 
             with c0:
                 st.checkbox("", key=f"sec_{item.id}")
@@ -751,7 +760,7 @@ else:
                 st.markdown(status_html(status), unsafe_allow_html=True)
 
             with c6:
-                b1, b2, b3, b4 = st.columns(4)
+                b1, b2, b3, b4 = st.columns([1, 1, 1, 1])
 
                 with b1:
                     if st.button("Detay", key=f"detay_{item.id}", use_container_width=True):
