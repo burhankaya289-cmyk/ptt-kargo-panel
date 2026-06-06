@@ -18,21 +18,14 @@ from database.database import SessionLocal, engine
 from database.models import Base, Shipment
 
 require_login()
-
 Base.metadata.create_all(bind=engine)
 
 
 def ensure_columns():
     try:
         with engine.connect() as conn:
-            columns = conn.execute(
-                text("PRAGMA table_info(shipments)")
-            ).fetchall()
-
-            column_names = [
-                col[1]
-                for col in columns
-            ]
+            columns = conn.execute(text("PRAGMA table_info(shipments)")).fetchall()
+            column_names = [col[1] for col in columns]
 
             if "is_edited" not in column_names:
                 conn.execute(
@@ -53,23 +46,13 @@ db = SessionLocal()
 
 try:
     if os.path.exists("fonts/DejaVuSans.ttf"):
-        pdfmetrics.registerFont(
-            TTFont(
-                "DejaVu",
-                "fonts/DejaVuSans.ttf"
-            )
-        )
+        pdfmetrics.registerFont(TTFont("DejaVu", "fonts/DejaVuSans.ttf"))
         PDF_FONT = "DejaVu"
     else:
         PDF_FONT = "Helvetica"
 
     if os.path.exists("fonts/DejaVuSans-Bold.ttf"):
-        pdfmetrics.registerFont(
-            TTFont(
-                "DejaVu-Bold",
-                "fonts/DejaVuSans-Bold.ttf"
-            )
-        )
+        pdfmetrics.registerFont(TTFont("DejaVu-Bold", "fonts/DejaVuSans-Bold.ttf"))
         PDF_FONT_BOLD = "DejaVu-Bold"
     else:
         PDF_FONT_BOLD = "Helvetica-Bold"
@@ -144,12 +127,6 @@ h2, h3 {
     color: #1672f3 !important;
 }
 
-div[data-testid="stButton"] button[kind="primary"] {
-    background: #1669f2 !important;
-    color: white !important;
-    border: 1px solid #1669f2 !important;
-}
-
 .clean-title {
     font-size: 17px;
     font-weight: 800;
@@ -157,82 +134,62 @@ div[data-testid="stButton"] button[kind="primary"] {
     margin-bottom: 14px;
 }
 
-.top-info {
+.info-pill {
     background: #dbeafe;
     color: #1263d8;
-    padding: 10px 16px;
+    padding: 10px 14px;
     border-radius: 14px;
     font-weight: 800;
     font-size: 13px;
     text-align: center;
 }
 
-.shipment-card {
-    background: #ffffff;
-    border: 1px solid #dbe3ef;
-    border-radius: 18px;
-    padding: 16px 18px;
-    margin-bottom: 14px;
-    box-shadow: 0 10px 28px rgba(15,23,42,0.05);
-}
-
-.shipment-main {
-    display: grid;
-    grid-template-columns: 40px 2.2fr 1.4fr 1.4fr 1.2fr;
-    gap: 14px;
-    align-items: center;
-}
-
-.shipment-actions {
-    display: grid;
-    grid-template-columns: 110px 110px 110px 110px 1fr;
-    gap: 10px;
-    margin-top: 12px;
-}
-
-.shipment-title {
+.card-title {
     font-size: 15px;
     font-weight: 800;
     color: #0f172a;
-    margin-bottom: 4px;
 }
 
-.shipment-sub {
+.card-sub {
     font-size: 12px;
     color: #64748b;
-}
-
-.status-green,
-.status-red,
-.status-yellow {
-    padding: 7px 12px;
-    border-radius: 999px;
-    font-size: 12px;
-    font-weight: 800;
-    text-align: center;
-    white-space: nowrap;
+    margin-top: 3px;
 }
 
 .status-green {
     background: #e8f8ee;
     color: #17623a;
+    padding: 7px 10px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 800;
+    text-align: center;
 }
 
 .status-red {
     background: #ffe8e8;
     color: #8a1f1f;
+    padding: 7px 10px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 800;
+    text-align: center;
 }
 
 .status-yellow {
     background: #fff6db;
     color: #8a6100;
+    padding: 7px 10px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 800;
+    text-align: center;
 }
 
 .mini-label {
     color: #64748b;
     font-size: 11px;
     font-weight: 700;
-    margin-bottom: 3px;
 }
 
 .mini-value {
@@ -260,15 +217,11 @@ def kisalt(text, limit):
     return str(text or "")[:limit]
 
 
-def bool_value(value):
-    return bool(value) if value is not None else False
-
-
 def get_status(item):
-    if bool_value(getattr(item, "is_edited", False)):
+    if bool(getattr(item, "is_edited", False)):
         return "Düzenlendi"
 
-    if bool_value(getattr(item, "is_printed", False)):
+    if bool(getattr(item, "is_printed", False)):
         return "Yazdırıldı"
 
     return "Yazdırılmadı"
@@ -313,34 +266,18 @@ def create_excel(shipments):
         })
 
     output = BytesIO()
-
-    pd.DataFrame(rows).to_excel(
-        output,
-        index=False
-    )
-
+    pd.DataFrame(rows).to_excel(output, index=False)
     output.seek(0)
 
     return output
 
 
-def draw_wrapped(
-    c,
-    text,
-    x,
-    y,
-    max_chars,
-    max_lines,
-    font=None,
-    size=8,
-    gap=9
-):
+def draw_wrapped(c, text, x, y, max_chars, max_lines, font=None, size=8, gap=9):
     if font is None:
         font = PDF_FONT
 
     text = str(text or "").strip()
     words = text.split()
-
     lines = []
     line = ""
 
@@ -371,27 +308,15 @@ def create_pdf(shipments):
     page_width = 100 * mm
     page_height = 110 * mm
 
-    c = canvas.Canvas(
-        output,
-        pagesize=(page_width, page_height)
-    )
+    c = canvas.Canvas(output, pagesize=(page_width, page_height))
 
     for item in shipments:
         c.setLineWidth(0.8)
 
-        c.rect(
-            4 * mm,
-            4 * mm,
-            92 * mm,
-            102 * mm
-        )
+        c.rect(4 * mm, 4 * mm, 92 * mm, 102 * mm)
 
         c.setFont(PDF_FONT_BOLD, 13)
-        c.drawCentredString(
-            50 * mm,
-            101 * mm,
-            "PTT GENEL MÜDÜRLÜĞÜ KARGO ETİKETİ"
-        )
+        c.drawCentredString(50 * mm, 101 * mm, "PTT GENEL MÜDÜRLÜĞÜ KARGO ETİKETİ")
 
         c.setFont(PDF_FONT_BOLD, 6.2)
         c.drawCentredString(
@@ -400,12 +325,7 @@ def create_pdf(shipments):
             "***PTT GENEL MÜDÜRLÜĞÜ'NÜN 08/03/2011 VE 1918 SAYILI İZNİYLE BASILMIŞTIR.***"
         )
 
-        c.line(
-            4 * mm,
-            93 * mm,
-            96 * mm,
-            93 * mm
-        )
+        c.line(4 * mm, 93 * mm, 96 * mm, 93 * mm)
 
         c.rect(4 * mm, 77 * mm, 64 * mm, 16 * mm)
         c.rect(68 * mm, 77 * mm, 28 * mm, 16 * mm)
@@ -414,21 +334,9 @@ def create_pdf(shipments):
         c.drawString(6 * mm, 90 * mm, "GÖNDERİCİ")
 
         c.setFont(PDF_FONT, 6.5)
-        c.drawString(
-            6 * mm,
-            86.5 * mm,
-            "Ziraat Katılım Bankası A.Ş. (Hadımköy Lojistik Merkezi)"
-        )
-        c.drawString(
-            6 * mm,
-            83 * mm,
-            "Ömerli Mah. Nusret Cad. No:21 (2. Bodrum Kat)"
-        )
-        c.drawString(
-            6 * mm,
-            79.5 * mm,
-            "Arnavutköy / İstanbul"
-        )
+        c.drawString(6 * mm, 86.5 * mm, "Ziraat Katılım Bankası A.Ş. (Hadımköy Lojistik Merkezi)")
+        c.drawString(6 * mm, 83 * mm, "Ömerli Mah. Nusret Cad. No:21 (2. Bodrum Kat)")
+        c.drawString(6 * mm, 79.5 * mm, "Arnavutköy / İstanbul")
 
         c.setFont(PDF_FONT_BOLD, 6.5)
         c.drawString(70 * mm, 90 * mm, "KAB. MRKZ")
@@ -468,14 +376,7 @@ def create_pdf(shipments):
         )
 
         c.setFont(PDF_FONT_BOLD, 9.5)
-        c.drawString(
-            6 * mm,
-            52.5 * mm,
-            kisalt(
-                f"{item.district or ''} / {item.city or ''}",
-                45
-            )
-        )
+        c.drawString(6 * mm, 52.5 * mm, kisalt(f"{item.district or ''} / {item.city or ''}", 45))
 
         c.rect(4 * mm, 39 * mm, 23 * mm, 11 * mm)
         c.rect(27 * mm, 39 * mm, 28 * mm, 11 * mm)
@@ -489,37 +390,17 @@ def create_pdf(shipments):
         c.drawString(80 * mm, 47 * mm, "ŞUBE KODU")
 
         c.setFont(PDF_FONT_BOLD, 9.5)
-        c.drawCentredString(
-            15.5 * mm,
-            42 * mm,
-            datetime.now().strftime("%d.%m.%Y")
-        )
+        c.drawCentredString(15.5 * mm, 42 * mm, datetime.now().strftime("%d.%m.%Y"))
 
         c.setFont(PDF_FONT_BOLD, 6.5)
-        c.drawCentredString(
-            41 * mm,
-            43.2 * mm,
-            f"{item.width}x{item.length}x{item.height}"
-        )
-        c.drawCentredString(
-            41 * mm,
-            40.3 * mm,
-            "(Ds:1)"
-        )
+        c.drawCentredString(41 * mm, 43.2 * mm, f"{item.width}x{item.length}x{item.height}")
+        c.drawCentredString(41 * mm, 40.3 * mm, "(Ds:1)")
 
         c.setFont(PDF_FONT_BOLD, 10.5)
-        c.drawCentredString(
-            66.5 * mm,
-            42 * mm,
-            str(int(item.weight or 0))
-        )
+        c.drawCentredString(66.5 * mm, 42 * mm, str(int(item.weight or 0)))
 
         c.setFont(PDF_FONT_BOLD, 9.5)
-        c.drawCentredString(
-            87 * mm,
-            42 * mm,
-            str(item.branch_code or "")
-        )
+        c.drawCentredString(87 * mm, 42 * mm, str(item.branch_code or ""))
 
         c.rect(4 * mm, 27 * mm, 56 * mm, 12 * mm)
         c.rect(60 * mm, 27 * mm, 18 * mm, 12 * mm)
@@ -531,11 +412,7 @@ def create_pdf(shipments):
         c.drawString(80 * mm, 36 * mm, "BEYAN DEĞERİ")
 
         c.setFont(PDF_FONT_BOLD, 8.5)
-        c.drawString(
-            6 * mm,
-            31.5 * mm,
-            kisalt(item.product_name, 34)
-        )
+        c.drawString(6 * mm, 31.5 * mm, kisalt(item.product_name, 34))
 
         c.setFont(PDF_FONT, 8.5)
         c.drawCentredString(69 * mm, 31.5 * mm, "-")
@@ -543,11 +420,7 @@ def create_pdf(shipments):
 
         c.rect(4 * mm, 4 * mm, 92 * mm, 23 * mm)
 
-        barcode_value = str(
-            item.tracking_number
-            or item.barcode
-            or ""
-        )
+        barcode_value = str(item.tracking_number or item.barcode or "")
 
         barcode = code128.Code128(
             barcode_value,
@@ -555,23 +428,14 @@ def create_pdf(shipments):
             barWidth=0.68
         )
 
-        barcode.drawOn(
-            c,
-            18 * mm,
-            9 * mm
-        )
+        barcode.drawOn(c, 18 * mm, 9 * mm)
 
         c.setFont(PDF_FONT_BOLD, 13)
-        c.drawCentredString(
-            50 * mm,
-            5.8 * mm,
-            barcode_value
-        )
+        c.drawCentredString(50 * mm, 5.8 * mm, barcode_value)
 
         c.showPage()
 
     c.save()
-
     output.seek(0)
 
     return output
@@ -601,14 +465,9 @@ st.markdown(
 st.write("")
 
 with st.container(border=True):
-    st.markdown(
-        '<div class="clean-title">Filtreler</div>',
-        unsafe_allow_html=True
-    )
+    st.markdown('<div class="clean-title">Filtreler</div>', unsafe_allow_html=True)
 
-    f1, f2, f3, f4, f5 = st.columns(
-        [1.2, 1.2, 1.2, 1.2, 1.1]
-    )
+    f1, f2, f3, f4, f5 = st.columns([1.2, 1.2, 1.2, 1.2, 1.1])
 
     with f1:
         filtre_alici = st.text_input("Alıcı Adı")
@@ -661,10 +520,7 @@ for item in gonderiler:
 
     filtered.append(item)
 
-filtered_ids = [
-    item.id
-    for item in filtered
-]
+filtered_ids = [item.id for item in filtered]
 
 selected_ids = []
 
@@ -681,40 +537,36 @@ selected_items = [
 st.write("")
 
 with st.container(border=True):
-    a1, a2, a3, a4, a5, a6 = st.columns(
-        [1.1, 1.1, 1.3, 1.3, 1.2, 1.2]
-    )
+    a1, a2, a3, a4, a5, a6, a7 = st.columns([1, 1, 1.1, 1.1, 1.1, 1.1, 1.1])
 
     with a1:
         st.markdown(
-            f'<div class="top-info">Toplam: {len(filtered)}</div>',
+            f'<div class="info-pill">Toplam: {len(filtered)}</div>',
             unsafe_allow_html=True
         )
 
     with a2:
         st.markdown(
-            f'<div class="top-info">Seçili: {len(selected_ids)}</div>',
+            f'<div class="info-pill">Seçili: {len(selected_ids)}</div>',
             unsafe_allow_html=True
         )
 
     with a3:
-        if st.button("✓ Tümünü Seç", use_container_width=True):
+        if st.button("Tümünü Seç", use_container_width=True):
             for item_id in filtered_ids:
                 st.session_state[f"sec_{item_id}"] = True
-
             st.rerun()
 
     with a4:
-        if st.button("✕ Temizle", use_container_width=True):
+        if st.button("Temizle", use_container_width=True):
             for item_id in filtered_ids:
                 st.session_state[f"sec_{item_id}"] = False
-
             st.rerun()
 
     with a5:
         if selected_items:
             st.download_button(
-                "🖨️ Yazdır",
+                "Yazdır",
                 create_pdf(selected_items),
                 file_name="secilen_etiketler.pdf",
                 mime="application/pdf",
@@ -723,33 +575,23 @@ with st.container(border=True):
                 args=([item.id for item in selected_items],)
             )
         else:
-            st.button(
-                "🖨️ Yazdır",
-                use_container_width=True,
-                disabled=True
-            )
+            st.button("Yazdır", use_container_width=True, disabled=True)
 
     with a6:
         if selected_items:
             st.download_button(
-                "📊 Excel",
+                "Excel",
                 create_excel(selected_items),
                 file_name="gonderiler.xlsx",
                 mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
                 use_container_width=True
             )
         else:
-            st.button(
-                "📊 Excel",
-                use_container_width=True,
-                disabled=True
-            )
+            st.button("Excel", use_container_width=True, disabled=True)
 
-    s1, s2 = st.columns([1.2, 5])
-
-    with s1:
+    with a7:
         if selected_items:
-            if st.button("🗑️ Sil", use_container_width=True):
+            if st.button("Sil", use_container_width=True):
                 for item in selected_items:
                     db.delete(item)
 
@@ -760,11 +602,7 @@ with st.container(border=True):
 
                 st.rerun()
         else:
-            st.button(
-                "🗑️ Sil",
-                use_container_width=True,
-                disabled=True
-            )
+            st.button("Sil", use_container_width=True, disabled=True)
 
 st.write("")
 
@@ -778,82 +616,181 @@ else:
     for item in filtered:
         status = get_status(item)
 
-                else:
-    for item in filtered:
-        status = get_status(item)
+        with st.container(border=True):
+            c0, c1, c2, c3, c4 = st.columns([0.35, 2.4, 1.5, 1.35, 1.2])
 
-        st.markdown(
-            '<div class="shipment-card">',
-            unsafe_allow_html=True
-        )
+            with c0:
+                st.checkbox("", key=f"sec_{item.id}")
 
-        c0, c1, c2, c3, c4 = st.columns([0.35, 2.3, 1.4, 1.4, 1.2])
-
-        with c0:
-            st.checkbox("", key=f"sec_{item.id}")
-
-        with c1:
-            st.markdown(
-                f"""
-                <div class="shipment-title">{kisalt(item.recipient_name, 55)}</div>
-                <div class="shipment-sub">{item.branch_code or ""} - {item.branch_name or ""}</div>
-                """,
-                unsafe_allow_html=True
-            )
-
-        with c2:
-            st.markdown(
-                f"""
-                <div class="mini-label">Ürün</div>
-                <div class="mini-value">{kisalt(item.product_name, 38)}</div>
-                """,
-                unsafe_allow_html=True
-            )
-
-        with c3:
-            st.markdown(
-                f"""
-                <div class="mini-label">Takip No</div>
-                <div class="mini-value">{item.tracking_number or ""}</div>
-                """,
-                unsafe_allow_html=True
-            )
-
-        with c4:
-            st.markdown(status_html(status), unsafe_allow_html=True)
-
-        d1, d2, d3, d4, d5 = st.columns([1, 1, 1, 1, 5])
-
-        with d1:
-            if st.button("Detay", key=f"detay_{item.id}", use_container_width=True):
-                st.session_state[f"detay_{item.id}"] = not st.session_state.get(
-                    f"detay_{item.id}",
-                    False
+            with c1:
+                st.markdown(
+                    f'<div class="card-title">{kisalt(item.recipient_name, 55)}</div>',
+                    unsafe_allow_html=True
                 )
-                st.rerun()
-
-        with d2:
-            st.download_button(
-                "PDF",
-                create_pdf([item]),
-                file_name=f"etiket_{item.tracking_number}.pdf",
-                mime="application/pdf",
-                key=f"pdf_{item.id}",
-                use_container_width=True,
-                on_click=mark_printed,
-                args=([item.id],)
-            )
-
-        with d3:
-            if st.button("Düzenle", key=f"duzenle_{item.id}", use_container_width=True):
-                st.session_state[f"edit_{item.id}"] = not st.session_state.get(
-                    f"edit_{item.id}",
-                    False
+                st.markdown(
+                    f'<div class="card-sub">{item.branch_code or ""} - {item.branch_name or ""}</div>',
+                    unsafe_allow_html=True
                 )
-                st.rerun()
 
-        with d4:
-            if st.button("Sil", key=f"sil_{item.id}", use_container_width=True):
-                db.delete(item)
-                db.commit()
-                st.rerun()
+            with c2:
+                st.markdown(
+                    f'<div class="mini-label">Ürün</div><div class="mini-value">{kisalt(item.product_name, 38)}</div>',
+                    unsafe_allow_html=True
+                )
+
+            with c3:
+                st.markdown(
+                    f'<div class="mini-label">Takip No</div><div class="mini-value">{item.tracking_number or ""}</div>',
+                    unsafe_allow_html=True
+                )
+
+            with c4:
+                st.markdown(status_html(status), unsafe_allow_html=True)
+
+            d1, d2, d3, d4, d5 = st.columns([1, 1, 1, 1, 5])
+
+            with d1:
+                if st.button("Detay", key=f"detay_{item.id}", use_container_width=True):
+                    st.session_state[f"detay_{item.id}"] = not st.session_state.get(
+                        f"detay_{item.id}",
+                        False
+                    )
+                    st.rerun()
+
+            with d2:
+                st.download_button(
+                    "PDF",
+                    create_pdf([item]),
+                    file_name=f"etiket_{item.tracking_number}.pdf",
+                    mime="application/pdf",
+                    key=f"pdf_{item.id}",
+                    use_container_width=True,
+                    on_click=mark_printed,
+                    args=([item.id],)
+                )
+
+            with d3:
+                if st.button("Düzenle", key=f"duzenle_{item.id}", use_container_width=True):
+                    st.session_state[f"edit_{item.id}"] = not st.session_state.get(
+                        f"edit_{item.id}",
+                        False
+                    )
+                    st.rerun()
+
+            with d4:
+                if st.button("Sil", key=f"sil_{item.id}", use_container_width=True):
+                    db.delete(item)
+                    db.commit()
+                    st.rerun()
+
+            if st.session_state.get(f"detay_{item.id}", False):
+                st.info(
+                    f"""
+Şube Kodu: {item.branch_code}
+
+Şube Adı: {item.branch_name}
+
+Adres: {item.address}
+
+İlçe: {item.district}
+
+İl: {item.city}
+
+Telefon: {item.phone}
+
+En: {item.width}
+
+Boy: {item.length}
+
+Yükseklik: {item.height}
+
+Ağırlık: {item.weight}
+
+Kullanıcı: {item.created_by}
+"""
+                )
+
+            if st.session_state.get(f"edit_{item.id}", False):
+                with st.form(f"edit_form_{item.id}"):
+                    e1, e2 = st.columns(2)
+
+                    with e1:
+                        recipient_name = st.text_input(
+                            "Alıcı Adı",
+                            value=item.recipient_name or ""
+                        )
+
+                        product_name = st.text_input(
+                            "Ürün İçeriği",
+                            value=item.product_name or ""
+                        )
+
+                        phone = st.text_input(
+                            "Telefon",
+                            value=item.phone or ""
+                        )
+
+                    with e2:
+                        address = st.text_input(
+                            "Adres",
+                            value=item.address or ""
+                        )
+
+                        district = st.text_input(
+                            "İlçe",
+                            value=item.district or ""
+                        )
+
+                        city = st.text_input(
+                            "İl",
+                            value=item.city or ""
+                        )
+
+                    o1, o2, o3, o4 = st.columns(4)
+
+                    with o1:
+                        width = st.number_input(
+                            "En",
+                            value=float(item.width or 0)
+                        )
+
+                    with o2:
+                        length = st.number_input(
+                            "Boy",
+                            value=float(item.length or 0)
+                        )
+
+                    with o3:
+                        height = st.number_input(
+                            "Yükseklik",
+                            value=float(item.height or 0)
+                        )
+
+                    with o4:
+                        weight = st.number_input(
+                            "Ağırlık",
+                            value=float(item.weight or 0)
+                        )
+
+                    kaydet = st.form_submit_button("Düzenlemeyi Kaydet")
+
+                    if kaydet:
+                        item.recipient_name = recipient_name
+                        item.product_name = product_name
+                        item.phone = phone
+                        item.address = address
+                        item.district = district
+                        item.city = city
+                        item.width = width
+                        item.length = length
+                        item.height = height
+                        item.weight = weight
+                        item.is_edited = True
+                        item.is_printed = False
+
+                        db.commit()
+
+                        st.session_state[f"edit_{item.id}"] = False
+
+                        st.success("Gönderi düzenlendi.")
+                        st.rerun()
