@@ -15,7 +15,7 @@ from sqlalchemy import text
 
 from utils.auth import require_login
 from database.database import SessionLocal, engine
-from database.models import Base, Shipment
+from database.models import Base, Shipment, Setting
 
 require_login()
 Base.metadata.create_all(bind=engine)
