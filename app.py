@@ -277,8 +277,8 @@ def login_page():
 if not st.session_state.logged_in:
     login_page()
     st.stop()
-    
-    st.sidebar.markdown(
+
+st.sidebar.markdown(
     """
     <div style="
         display:flex;
@@ -300,21 +300,11 @@ if not st.session_state.logged_in:
         ">
             🚚
         </div>
-
         <div>
-            <div style="
-                color:white;
-                font-size:18px;
-                font-weight:800;
-                line-height:1.1;
-            ">
+            <div style="color:white;font-size:18px;font-weight:800;line-height:1.1;">
                 PTT ENTEGRASYON
             </div>
-
-            <div style="
-                color:#94a3b8;
-                font-size:12px;
-            ">
+            <div style="color:#94a3b8;font-size:12px;">
                 Barkod Yönetim Sistemi
             </div>
         </div>
@@ -322,6 +312,7 @@ if not st.session_state.logged_in:
     """,
     unsafe_allow_html=True
 )
+
 pages = [
     st.Page("pages/08_Dashboard.py", title="Dashboard", icon="📊"),
     st.Page("pages/02_Gonderi_Olustur.py", title="Gönderi Oluştur", icon="📦"),
