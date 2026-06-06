@@ -1,13 +1,13 @@
 import streamlit as st
 from datetime import datetime
 
+from sqlalchemy import func
+
 from utils.auth import require_login
-from database.database import SessionLocal, engine
-from database.models import Base, Shipment, Barcode, Branch, ProductDimension, User
+from database.database import SessionLocal
+from database.models import Shipment, Barcode, Branch, ProductDimension, User
 
 require_login()
-
-
 
 db = SessionLocal()
 
@@ -92,19 +92,17 @@ def today_str():
     return datetime.now().strftime("%d.%m.%Y")
 
 
-shipments = db.query(Shipment).all()
-barcodes = db.query(Barcode).all()
-branches = db.query(Branch).all()
-products = db.query(ProductDimension).all()
-users = db.query(User).all()
+total_shipments = db.query(func.count(Shipment.id)).scalar() or 0
+printed = db.query(func.count(Shipment.id)).filter(Shipment.is_printed == True).scalar() or 0
+not_printed = db.query(func.count(Shipment.id)).filter(Shipment.is_printed == False).scalar() or 0
+edited = db.query(func.count(Shipment.id)).filter(Shipment.is_edited == True).scalar() or 0
 
-total_shipments = len(shipments)
-printed = len([x for x in shipments if x.is_printed])
-not_printed = len([x for x in shipments if not x.is_printed])
-edited = len([x for x in shipments if getattr(x, "is_edited", False)])
+unused_barcodes = db.query(func.count(Barcode.id)).filter(Barcode.is_used == False).scalar() or 0
+used_barcodes = db.query(func.count(Barcode.id)).filter(Barcode.is_used == True).scalar() or 0
 
-unused_barcodes = len([x for x in barcodes if not x.is_used])
-used_barcodes = len([x for x in barcodes if x.is_used])
+branch_count = db.query(func.count(Branch.id)).scalar() or 0
+product_count = db.query(func.count(ProductDimension.id)).scalar() or 0
+user_count = db.query(func.count(User.id)).scalar() or 0
 
 st.title("Dashboard")
 st.markdown(
@@ -153,19 +151,19 @@ with m5:
 with m6:
     with st.container(border=True):
         st.markdown('<div class="metric-title">ŞUBE SAYISI</div>', unsafe_allow_html=True)
-        st.markdown(f'<div class="metric-value">{len(branches)}</div>', unsafe_allow_html=True)
+        st.markdown(f'<div class="metric-value">{branch_count}</div>', unsafe_allow_html=True)
         st.markdown('<div class="metric-sub">Kayıtlı şube</div>', unsafe_allow_html=True)
 
 with m7:
     with st.container(border=True):
         st.markdown('<div class="metric-title">ÜRÜN ÖLÇÜSÜ</div>', unsafe_allow_html=True)
-        st.markdown(f'<div class="metric-value">{len(products)}</div>', unsafe_allow_html=True)
+        st.markdown(f'<div class="metric-value">{product_count}</div>', unsafe_allow_html=True)
         st.markdown('<div class="metric-sub">Kayıtlı ürün ölçüsü</div>', unsafe_allow_html=True)
 
 with m8:
     with st.container(border=True):
         st.markdown('<div class="metric-title">KULLANICI</div>', unsafe_allow_html=True)
-        st.markdown(f'<div class="metric-value">{len(users)}</div>', unsafe_allow_html=True)
+        st.markdown(f'<div class="metric-value">{user_count}</div>', unsafe_allow_html=True)
         st.markdown('<div class="metric-sub">Panel kullanıcısı</div>', unsafe_allow_html=True)
 
 st.write("")
@@ -205,26 +203,25 @@ with right:
     with st.container(border=True):
         st.markdown('<div class="clean-title">Kullanıcı Bazlı Gönderi</div>', unsafe_allow_html=True)
 
-        user_counts = {}
-
-        for item in shipments:
-            key = item.created_by or "Bilinmiyor"
-            user_counts[key] = user_counts.get(key, 0) + 1
+        user_counts = (
+            db.query(
+                Shipment.created_by,
+                func.count(Shipment.id)
+            )
+            .group_by(Shipment.created_by)
+            .order_by(func.count(Shipment.id).desc())
+            .limit(10)
+            .all()
+        )
 
         if not user_counts:
             st.info("Kayıt yok.")
         else:
-            sorted_users = sorted(
-                user_counts.items(),
-                key=lambda x: x[1],
-                reverse=True
-            )
-
-            for username, count in sorted_users[:10]:
+            for username, count in user_counts:
                 st.markdown(
                     f"""
                     <div class="row-card">
-                        <div class="row-title">{username}</div>
+                        <div class="row-title">{username or "Bilinmiyor"}</div>
                         <div class="row-sub">{count} gönderi oluşturdu</div>
                     </div>
                     """,
@@ -236,28 +233,29 @@ st.write("")
 with st.container(border=True):
     st.markdown('<div class="clean-title">En Çok Gönderi Alan Şubeler</div>', unsafe_allow_html=True)
 
-    branch_counts = {}
-
-    for item in shipments:
-        key = item.branch_name or item.recipient_name or "Bilinmiyor"
-        branch_counts[key] = branch_counts.get(key, 0) + 1
+    branch_counts = (
+        db.query(
+            Shipment.branch_name,
+            func.count(Shipment.id)
+        )
+        .group_by(Shipment.branch_name)
+        .order_by(func.count(Shipment.id).desc())
+        .limit(10)
+        .all()
+    )
 
     if not branch_counts:
         st.info("Kayıt yok.")
     else:
-        sorted_branches = sorted(
-            branch_counts.items(),
-            key=lambda x: x[1],
-            reverse=True
-        )
-
-        for branch_name, count in sorted_branches[:10]:
+        for branch_name, count in branch_counts:
             st.markdown(
                 f"""
                 <div class="row-card">
-                    <div class="row-title">{branch_name}</div>
+                    <div class="row-title">{branch_name or "Bilinmiyor"}</div>
                     <div class="row-sub">{count} gönderi</div>
                 </div>
                 """,
                 unsafe_allow_html=True
             )
+
+db.close()
