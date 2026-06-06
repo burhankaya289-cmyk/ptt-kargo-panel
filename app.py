@@ -300,6 +300,10 @@ if str(st.session_state.role).strip().lower() == "admin":
         st.Page("pages/07_Kullanicilar.py", title="Kullanıcılar", icon="👥")
     )
 
+    pages.append(
+        st.Page("pages/13_Ayarlar.py", title="Ayarlar", icon="⚙️")
+    )
+
 pg = st.navigation(pages)
 
 st.sidebar.markdown("---")
