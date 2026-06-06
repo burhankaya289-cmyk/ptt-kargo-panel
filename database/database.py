@@ -1,11 +1,17 @@
+import os
+import streamlit as st
+
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
-DATABASE_URL = "sqlite:///ptt_kargo.db"
+DATABASE_URL = st.secrets.get("DATABASE_URL") or os.getenv("DATABASE_URL")
+
+if not DATABASE_URL:
+    raise RuntimeError("DATABASE_URL bulunamadı.")
 
 engine = create_engine(
     DATABASE_URL,
-    connect_args={"check_same_thread": False}
+    pool_pre_ping=True
 )
 
 SessionLocal = sessionmaker(
