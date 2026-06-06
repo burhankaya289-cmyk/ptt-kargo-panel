@@ -20,23 +20,44 @@ if not admin:
     db.add(User(username="admin", password="admin123", role="Admin"))
     db.commit()
 
-token_user = st.query_params.get("user", "")
-token_role = st.query_params.get("role", "")
-
 if "logged_in" not in st.session_state:
-    st.session_state.logged_in = bool(token_user)
+    st.session_state.logged_in = False
 
 if "username" not in st.session_state:
-    st.session_state.username = token_user
+    st.session_state.username = ""
 
 if "role" not in st.session_state:
-    st.session_state.role = token_role
+    st.session_state.role = ""
 
-if not st.session_state.logged_in:
+query_user = st.query_params.get("user", "")
+query_role = st.query_params.get("role", "")
+
+if query_user and query_role and not st.session_state.logged_in:
+    st.session_state.logged_in = True
+    st.session_state.username = query_user
+    st.session_state.role = query_role
+
+
+def login_page():
     st.markdown("""
     <style>
     section[data-testid="stSidebar"] {
         display: none !important;
+    }
+    html, body, div, span, p, label, input, textarea, button {
+        font-size: 12px !important;
+    }
+    .block-container {
+        padding-top: 1rem !important;
+        max-width: 520px !important;
+    }
+    h1 {
+        font-size: 22px !important;
+        text-align: center;
+    }
+    .stButton button {
+        font-size: 12px !important;
+        min-height: 30px !important;
     }
     </style>
     """, unsafe_allow_html=True)
@@ -46,7 +67,7 @@ if not st.session_state.logged_in:
     username = st.text_input("Kullanıcı Adı")
     password = st.text_input("Şifre", type="password")
 
-    if st.button("Giriş Yap"):
+    if st.button("Giriş Yap", use_container_width=True):
         user = (
             db.query(User)
             .filter(User.username == username, User.password == password)
@@ -65,9 +86,14 @@ if not st.session_state.logged_in:
         else:
             st.error("Hatalı kullanıcı adı veya şifre.")
 
+
+if not st.session_state.logged_in:
+    login_page()
     st.stop()
 
-st.sidebar.success(f"{st.session_state.username} | {st.session_state.role}")
+st.sidebar.success(
+    f"{st.session_state.username} | {st.session_state.role}"
+)
 
 if st.sidebar.button("Çıkış Yap"):
     st.session_state.logged_in = False
@@ -76,7 +102,8 @@ if st.sidebar.button("Çıkış Yap"):
 
     st.query_params.clear()
 
-    st.rerun()
+    login_page()
+    st.stop()
 
 pages = [
     st.Page("pages/08_Dashboard.py", title="Dashboard", icon="📊"),
@@ -88,7 +115,7 @@ pages = [
     st.Page("pages/12_Yedekleme.py", title="Yedekleme", icon="💾"),
 ]
 
-if st.session_state.role == "Admin":
+if str(st.session_state.role).strip().lower() == "admin":
     pages.append(
         st.Page("pages/07_Kullanicilar.py", title="Kullanıcılar", icon="👤")
     )
