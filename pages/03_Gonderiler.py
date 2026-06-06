@@ -778,65 +778,51 @@ else:
     for item in filtered:
         status = get_status(item)
 
-        st.markdown(
-            '<div class="shipment-card">',
-            unsafe_allow_html=True
-        )
+                st.markdown('<div class="shipment-card">', unsafe_allow_html=True)
 
-        c0, c1, c2, c3, c4 = st.columns(
-            [0.35, 2.2, 1.4, 1.2, 1.2]
-        )
+        c0, c1, c2, c3, c4 = st.columns([0.35, 2.3, 1.4, 1.4, 1.2])
 
         with c0:
-            st.checkbox(
-                "",
-                key=f"sec_{item.id}"
-            )
+            st.checkbox("", key=f"sec_{item.id}")
 
         with c1:
             st.markdown(
-                f'<div class="shipment-title">{kisalt(item.recipient_name, 55)}</div>',
-                unsafe_allow_html=True
-            )
-
-            st.markdown(
-                f'<div class="shipment-sub">{item.branch_code or ""} - {item.branch_name or ""}</div>',
+                f"""
+                <div class="shipment-title">{kisalt(item.recipient_name, 55)}</div>
+                <div class="shipment-sub">{item.branch_code or ""} - {item.branch_name or ""}</div>
+                """,
                 unsafe_allow_html=True
             )
 
         with c2:
             st.markdown(
-                f'<div class="mini-label">Ürün</div><div class="mini-value">{kisalt(item.product_name, 38)}</div>',
+                f"""
+                <div class="mini-label">Ürün</div>
+                <div class="mini-value">{kisalt(item.product_name, 38)}</div>
+                """,
                 unsafe_allow_html=True
             )
 
         with c3:
             st.markdown(
-                f'<div class="mini-label">Takip No</div><div class="mini-value">{item.tracking_number or ""}</div>',
+                f"""
+                <div class="mini-label">Takip No</div>
+                <div class="mini-value">{item.tracking_number or ""}</div>
+                """,
                 unsafe_allow_html=True
             )
 
         with c4:
-            st.markdown(
-                status_html(status),
-                unsafe_allow_html=True
-            )
+            st.markdown(status_html(status), unsafe_allow_html=True)
 
-        d1, d2, d3, d4, d5 = st.columns(
-            [1.3, 1.3, 1.3, 1.3, 4]
-        )
+        d1, d2, d3, d4, d5 = st.columns([1, 1, 1, 1, 5])
 
         with d1:
-            if st.button(
-                "Detay",
-                key=f"detay_{item.id}",
-                use_container_width=True
-            ):
+            if st.button("Detay", key=f"detay_{item.id}", use_container_width=True):
                 st.session_state[f"detay_{item.id}"] = not st.session_state.get(
                     f"detay_{item.id}",
                     False
                 )
-
                 st.rerun()
 
         with d2:
@@ -852,143 +838,15 @@ else:
             )
 
         with d3:
-            if st.button(
-                "Düzenle",
-                key=f"duzenle_{item.id}",
-                use_container_width=True
-            ):
+            if st.button("Düzenle", key=f"duzenle_{item.id}", use_container_width=True):
                 st.session_state[f"edit_{item.id}"] = not st.session_state.get(
                     f"edit_{item.id}",
                     False
                 )
-
                 st.rerun()
 
         with d4:
-            if st.button(
-                "Sil",
-                key=f"sil_{item.id}",
-                use_container_width=True
-            ):
+            if st.button("Sil", key=f"sil_{item.id}", use_container_width=True):
                 db.delete(item)
                 db.commit()
                 st.rerun()
-
-        if st.session_state.get(f"detay_{item.id}", False):
-            st.info(
-                f"""
-Şube Kodu: {item.branch_code}
-
-Şube Adı: {item.branch_name}
-
-Adres: {item.address}
-
-İlçe: {item.district}
-
-İl: {item.city}
-
-Telefon: {item.phone}
-
-En: {item.width}
-
-Boy: {item.length}
-
-Yükseklik: {item.height}
-
-Ağırlık: {item.weight}
-
-Kullanıcı: {item.created_by}
-"""
-            )
-
-        if st.session_state.get(f"edit_{item.id}", False):
-            with st.form(f"edit_form_{item.id}"):
-                e1, e2 = st.columns(2)
-
-                with e1:
-                    recipient_name = st.text_input(
-                        "Alıcı Adı",
-                        value=item.recipient_name or ""
-                    )
-
-                    product_name = st.text_input(
-                        "Ürün İçeriği",
-                        value=item.product_name or ""
-                    )
-
-                    phone = st.text_input(
-                        "Telefon",
-                        value=item.phone or ""
-                    )
-
-                with e2:
-                    address = st.text_input(
-                        "Adres",
-                        value=item.address or ""
-                    )
-
-                    district = st.text_input(
-                        "İlçe",
-                        value=item.district or ""
-                    )
-
-                    city = st.text_input(
-                        "İl",
-                        value=item.city or ""
-                    )
-
-                o1, o2, o3, o4 = st.columns(4)
-
-                with o1:
-                    width = st.number_input(
-                        "En",
-                        value=float(item.width or 0)
-                    )
-
-                with o2:
-                    length = st.number_input(
-                        "Boy",
-                        value=float(item.length or 0)
-                    )
-
-                with o3:
-                    height = st.number_input(
-                        "Yükseklik",
-                        value=float(item.height or 0)
-                    )
-
-                with o4:
-                    weight = st.number_input(
-                        "Ağırlık",
-                        value=float(item.weight or 0)
-                    )
-
-                kaydet = st.form_submit_button(
-                    "Düzenlemeyi Kaydet"
-                )
-
-                if kaydet:
-                    item.recipient_name = recipient_name
-                    item.product_name = product_name
-                    item.phone = phone
-                    item.address = address
-                    item.district = district
-                    item.city = city
-                    item.width = width
-                    item.length = length
-                    item.height = height
-                    item.weight = weight
-                    item.is_edited = True
-                    item.is_printed = False
-
-                    db.commit()
-
-                    st.session_state[f"edit_{item.id}"] = False
-
-                    st.success("Gönderi düzenlendi.")
-                    st.rerun()
-
-        st.markdown(
-            '</div>',
-            unsafe_allow_html=True
-        )
