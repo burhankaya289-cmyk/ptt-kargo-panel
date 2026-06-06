@@ -18,7 +18,7 @@ from database.database import SessionLocal, engine
 from database.models import Base, Shipment, Setting
 
 require_login()
-Base.metadata.create_all(bind=engine)
+
 
 
 def ensure_columns():
