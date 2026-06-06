@@ -13,47 +13,55 @@ db = SessionLocal()
 st.markdown("""
 <style>
 .block-container {
-    padding-top: 1.6rem !important;
+    padding-top: 1.4rem !important;
     padding-left: 1.8rem !important;
     padding-right: 1.8rem !important;
     max-width: 100% !important;
 }
+
 h1 {
     font-size: 30px !important;
     font-weight: 800 !important;
     margin-bottom: 0 !important;
 }
+
 h2, h3 {
     font-size: 17px !important;
     font-weight: 800 !important;
 }
+
 .page-subtitle {
     color: #64748b;
     font-size: 13px;
     margin-top: 6px;
 }
+
 .top-badge {
     background: #dbeafe;
     color: #1263d8;
-    padding: 11px 20px;
+    padding: 10px 18px;
     border-radius: 14px;
     font-weight: 800;
     font-size: 13px;
     text-align: center;
     min-width: 260px;
+    margin-top: 8px;
 }
+
 [data-testid="stVerticalBlockBorderWrapper"] {
     border-radius: 18px !important;
     background: #ffffff !important;
     border: 1px solid #dbe3ef !important;
     box-shadow: 0 12px 34px rgba(15,23,42,0.05) !important;
 }
+
 .stTextInput label,
 .stNumberInput label {
     font-size: 12px !important;
     color: #334155 !important;
     font-weight: 700 !important;
 }
+
 .stTextInput input,
 .stNumberInput input {
     background: #f8fafc !important;
@@ -62,21 +70,25 @@ h2, h3 {
     min-height: 44px !important;
     font-size: 13px !important;
 }
+
 .stButton button {
     border-radius: 12px !important;
     min-height: 42px !important;
     font-weight: 800 !important;
     border: 1px solid #dbe3ef !important;
 }
+
 .stButton button:hover {
     border-color: #1672f3 !important;
     color: #1672f3 !important;
 }
+
 div[data-testid="stButton"] button[kind="primary"] {
     background: #1669f2 !important;
     color: white !important;
     border: 1px solid #1669f2 !important;
 }
+
 .cart-empty {
     border: 2px dashed #dbe3ef;
     border-radius: 16px;
@@ -88,6 +100,7 @@ div[data-testid="stButton"] button[kind="primary"] {
     font-size: 15px;
     font-weight: 600;
 }
+
 .cart-item {
     background: #f8fafc;
     border: 1px solid #dbe3ef;
@@ -95,22 +108,26 @@ div[data-testid="stButton"] button[kind="primary"] {
     padding: 14px 16px;
     margin-bottom: 12px;
 }
+
 .cart-item-title {
     font-size: 14px;
     font-weight: 800;
     color: #0f172a;
 }
+
 .cart-item-sub {
     color: #64748b;
     font-size: 12px;
     margin-top: 4px;
 }
+
 .clean-title {
     font-size: 17px;
     font-weight: 800;
     color: #0f172a;
     margin-bottom: 18px;
 }
+
 .qty-box {
     height: 42px;
     border: 1px solid #dbe3ef;
@@ -122,10 +139,15 @@ div[data-testid="stButton"] button[kind="primary"] {
     font-weight: 800;
     color: #0f172a;
 }
-.suggestion-button button {
-    justify-content: flex-start !important;
-    text-align: left !important;
-    background: #f8fafc !important;
+
+.selected-info {
+    background: #eaf7ef;
+    color: #17623a;
+    border-radius: 12px;
+    padding: 10px 12px;
+    font-size: 12px;
+    font-weight: 700;
+    margin-top: 8px;
 }
 </style>
 """, unsafe_allow_html=True)
@@ -135,12 +157,6 @@ if "sepet" not in st.session_state:
 
 if "adet" not in st.session_state:
     st.session_state.adet = 1
-
-if "branch_input" not in st.session_state:
-    st.session_state.branch_input = ""
-
-if "product_input" not in st.session_state:
-    st.session_state.product_input = ""
 
 
 def norm(value):
@@ -208,11 +224,10 @@ def all_products():
     )
 
 
-def branch_exact(search_text):
-    search_text_clean = temizle(search_text)
-    search_text_norm = norm(search_text)
+def find_branch(search_text):
+    search = norm(search_text)
 
-    if not search_text_norm:
+    if not search:
         return None
 
     branches = all_branches()
@@ -221,68 +236,42 @@ def branch_exact(search_text):
         full_label = f"{b.branch_code} - {b.branch_name}"
 
         if (
-            norm(b.branch_code) == search_text_norm
-            or norm(b.branch_name) == search_text_norm
-            or norm(full_label) == search_text_norm
+            norm(b.branch_code) == search
+            or norm(b.branch_name) == search
+            or norm(full_label) == search
+        ):
+            return b
+
+    for b in branches:
+        full_label = f"{b.branch_code} - {b.branch_name}"
+
+        if (
+            norm(b.branch_code).startswith(search)
+            or search in norm(b.branch_name)
+            or search in norm(full_label)
         ):
             return b
 
     return None
 
 
-def branch_matches(search_text):
-    search_text_norm = norm(search_text)
+def find_product(search_text):
+    search = norm(search_text)
 
-    if not search_text_norm:
-        return []
-
-    branches = all_branches()
-
-    result = []
-
-    for b in branches:
-        full_label = f"{b.branch_code} - {b.branch_name}"
-
-        code_match = norm(b.branch_code).startswith(search_text_norm)
-        name_match = search_text_norm in norm(b.branch_name)
-        full_match = search_text_norm in norm(full_label)
-
-        if code_match or name_match or full_match:
-            result.append(b)
-
-    return result[:8]
-
-
-def product_exact(search_text):
-    search_text_norm = norm(search_text)
-
-    if not search_text_norm:
+    if not search:
         return None
 
     products = all_products()
 
     for p in products:
-        if norm(p.product_name) == search_text_norm:
+        if norm(p.product_name) == search:
+            return p
+
+    for p in products:
+        if search in norm(p.product_name):
             return p
 
     return None
-
-
-def product_matches(search_text):
-    search_text_norm = norm(search_text)
-
-    if not search_text_norm:
-        return []
-
-    products = all_products()
-
-    result = []
-
-    for p in products:
-        if search_text_norm in norm(p.product_name):
-            result.append(p)
-
-    return result[:8]
 
 
 def save_cart():
@@ -327,7 +316,7 @@ def save_cart():
     st.rerun()
 
 
-top_left, top_right = st.columns([4, 1])
+top_left, top_right = st.columns([4, 1], vertical_alignment="center")
 
 with top_left:
     st.title("Barkod Oluştur")
@@ -361,13 +350,11 @@ with tab1:
             st.markdown('<div class="clean-title">Alıcı (Şube)</div>', unsafe_allow_html=True)
 
             branch_search = st.text_input(
-    "Şube kodu veya adı yazın",
-    value=st.session_state.get("selected_branch_label", ""),
-    placeholder="Şube kodu veya adı yazın...",
-    key="branch_input"
-)
+                "Şube kodu veya adı yazın",
+                placeholder="Şube kodu veya adı yazın..."
+            )
 
-            selected_branch = branch_exact(branch_search)
+            selected_branch = find_branch(branch_search)
 
             if selected_branch:
                 default_branch_code = selected_branch.branch_code
@@ -376,6 +363,16 @@ with tab1:
                 default_address = selected_branch.address or ""
                 default_district = selected_branch.district or ""
                 default_city = selected_branch.city or ""
+
+                st.markdown(
+                    f"""
+                    <div class="selected-info">
+                        Seçili Şube: {default_branch_code} - {default_branch_name}
+                    </div>
+                    """,
+                    unsafe_allow_html=True
+                )
+
             else:
                 default_branch_code = branch_search
                 default_branch_name = branch_search
@@ -384,34 +381,17 @@ with tab1:
                 default_district = ""
                 default_city = ""
 
-                branch_suggestions = branch_matches(branch_search)
-
-                if branch_suggestions:
-                    for b in branch_suggestions:
-                        label = f"{b.branch_code} - {b.branch_name}"
-
-                        with st.container():
-                            st.markdown('<div class="suggestion-button">', unsafe_allow_html=True)
-
-                            if st.button(label, key=f"branch_{b.id}", use_container_width=True):
-                                st.session_state.selected_branch_label = label
-                                st.rerun()
-
-                            st.markdown('</div>', unsafe_allow_html=True)
-
         with st.container(border=True):
 
             st.markdown('<div class="clean-title">Ürün Bilgileri</div>', unsafe_allow_html=True)
 
             product_search = st.text_input(
-    "Ürün İçeriği",
-    value=st.session_state.get("selected_product_label", ""),
-    placeholder="Ürün içeriği yazın...",
-    key="product_input",
-    max_chars=30
-)
+                "Ürün İçeriği",
+                placeholder="Ürün içeriği yazın...",
+                max_chars=30
+            )
 
-            selected_product = product_exact(product_search)
+            selected_product = find_product(product_search)
 
             if selected_product:
                 product_name = selected_product.product_name
@@ -419,26 +399,22 @@ with tab1:
                 default_length = float(selected_product.length or 0)
                 default_height = float(selected_product.height or 0)
                 default_weight = float(selected_product.weight or 0)
-                st.success("Ürün ölçüsü bulundu.")
+
+                st.markdown(
+                    f"""
+                    <div class="selected-info">
+                        Ürün ölçüsü bulundu: {product_name}
+                    </div>
+                    """,
+                    unsafe_allow_html=True
+                )
+
             else:
                 product_name = product_search
                 default_width = 0.0
                 default_length = 0.0
                 default_height = 0.0
                 default_weight = 0.0
-
-                product_suggestions = product_matches(product_search)
-
-                if product_suggestions:
-                    for p in product_suggestions:
-                        with st.container():
-                            st.markdown('<div class="suggestion-button">', unsafe_allow_html=True)
-
-                            if st.button(p.product_name, key=f"product_{p.id}", use_container_width=True):
-                                st.session_state.selected_product_label = p.product_name
-                                st.rerun()
-
-                            st.markdown('</div>', unsafe_allow_html=True)
 
             st.markdown("**Adet**")
 
