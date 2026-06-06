@@ -168,65 +168,33 @@ with m8:
 
 st.write("")
 
-left, right = st.columns([1.35, 1], gap="large")
+with st.container(border=True):
+    st.markdown('<div class="clean-title">Kullanıcı Bazlı Gönderi</div>', unsafe_allow_html=True)
 
-with left:
-    with st.container(border=True):
-        st.markdown('<div class="clean-title">Son 10 Gönderi</div>', unsafe_allow_html=True)
-
-        latest = (
-            db.query(Shipment)
-            .order_by(Shipment.id.desc())
-            .limit(10)
-            .all()
+    user_counts = (
+        db.query(
+            Shipment.created_by,
+            func.count(Shipment.id)
         )
+        .group_by(Shipment.created_by)
+        .order_by(func.count(Shipment.id).desc())
+        .limit(10)
+        .all()
+    )
 
-        if not latest:
-            st.info("Henüz gönderi yok.")
-        else:
-            for item in latest:
-                status = "Yazdırıldı" if item.is_printed else "Yazdırılmadı"
-
-                st.markdown(
-                    f"""
-                    <div class="row-card">
-                        <div class="row-title">{item.recipient_name or ""}</div>
-                        <div class="row-sub">
-                            {item.tracking_number or ""} · {item.product_name or ""} · {status}
-                        </div>
-                    </div>
-                    """,
-                    unsafe_allow_html=True
-                )
-
-with right:
-    with st.container(border=True):
-        st.markdown('<div class="clean-title">Kullanıcı Bazlı Gönderi</div>', unsafe_allow_html=True)
-
-        user_counts = (
-            db.query(
-                Shipment.created_by,
-                func.count(Shipment.id)
+    if not user_counts:
+        st.info("Kayıt yok.")
+    else:
+        for username, count in user_counts:
+            st.markdown(
+                f"""
+                <div class="row-card">
+                    <div class="row-title">{username or "Bilinmiyor"}</div>
+                    <div class="row-sub">{count} gönderi oluşturdu</div>
+                </div>
+                """,
+                unsafe_allow_html=True
             )
-            .group_by(Shipment.created_by)
-            .order_by(func.count(Shipment.id).desc())
-            .limit(10)
-            .all()
-        )
-
-        if not user_counts:
-            st.info("Kayıt yok.")
-        else:
-            for username, count in user_counts:
-                st.markdown(
-                    f"""
-                    <div class="row-card">
-                        <div class="row-title">{username or "Bilinmiyor"}</div>
-                        <div class="row-sub">{count} gönderi oluşturdu</div>
-                    </div>
-                    """,
-                    unsafe_allow_html=True
-                )
 
 st.write("")
 
