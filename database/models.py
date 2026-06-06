@@ -83,3 +83,4 @@ class Shipment(Base):
     created_by = Column(String)
 
     is_printed = Column(Boolean, default=False)
+    is_edited = Column(Boolean, default=False)
