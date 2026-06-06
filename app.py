@@ -277,8 +277,7 @@ def login_page():
 if not st.session_state.logged_in:
     login_page()
     st.stop()
-
-st.sidebar.markdown(
+    st.sidebar.markdown(
     """
     <div class="sidebar-logo">
         <div class="sidebar-icon">📦</div>
@@ -290,7 +289,6 @@ st.sidebar.markdown(
     """,
     unsafe_allow_html=True
 )
-
 pages = [
     st.Page("pages/08_Dashboard.py", title="Dashboard", icon="📊"),
     st.Page("pages/02_Gonderi_Olustur.py", title="Gönderi Oluştur", icon="📦"),
