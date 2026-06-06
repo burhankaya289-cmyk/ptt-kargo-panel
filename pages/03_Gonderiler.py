@@ -664,32 +664,58 @@ else:
 
         with st.container(border=True):
 
-            top1, top2, top3 = st.columns([0.25, 4.5, 1.5])
+            row1, row2, row3, row4, row5 = st.columns([0.25, 2.4, 1.2, 1.4, 1.4])
 
-            with top1:
+            with row1:
                 st.checkbox("", key=f"sec_{item.id}")
 
-            with top2:
+            with row2:
+                st.markdown(
+                    """
+                    <div class="mini-label">Şube Adı</div>
+                    """,
+                    unsafe_allow_html=True
+                )
                 st.markdown(
                     f"""
-                    <div style="font-size:15px; font-weight:900; color:#0f172a;">
+                    <div class="mini-value">
                         {item.branch_name or item.recipient_name or "-"}
-                    </div>
-                    <div style="font-size:12px; color:#64748b; margin-top:4px;">
-                        Şube Kodu: {item.branch_code or "-"} &nbsp; | &nbsp;
-                        Ürün: <b>{item.product_name or "-"}</b> &nbsp; | &nbsp;
-                        Takip No: <b>{item.tracking_number or "-"}</b>
                     </div>
                     """,
                     unsafe_allow_html=True
                 )
 
-            with top3:
+            with row3:
+                st.markdown('<div class="mini-label">Şube Kodu</div>', unsafe_allow_html=True)
+                st.markdown(
+                    f'<div class="mini-value">{item.branch_code or "-"}</div>',
+                    unsafe_allow_html=True
+                )
+
+            with row4:
+                st.markdown('<div class="mini-label">Ürün</div>', unsafe_allow_html=True)
+                st.markdown(
+                    f'<div class="mini-value">{item.product_name or "-"}</div>',
+                    unsafe_allow_html=True
+                )
+
+            with row5:
+                st.markdown('<div class="mini-label">Takip No</div>', unsafe_allow_html=True)
+                st.markdown(
+                    f'<div class="mini-value">{item.tracking_number or "-"}</div>',
+                    unsafe_allow_html=True
+                )
+
+            st.write("")
+
+            status_col, empty_col = st.columns([1.4, 4.6])
+
+            with status_col:
                 st.markdown(status_html(status), unsafe_allow_html=True)
 
             st.write("")
 
-            b1, b2, b3, b4, b5 = st.columns([1, 1, 1, 1, 5])
+            b1, b2, b3, b4, b5 = st.columns([1.1, 1.1, 1.1, 1.1, 4.6])
 
             with b1:
                 if st.button("Detay", key=f"detay_{item.id}", use_container_width=True):
