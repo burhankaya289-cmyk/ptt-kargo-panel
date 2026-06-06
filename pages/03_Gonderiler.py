@@ -21,13 +21,33 @@ require_login()
 
 Base.metadata.create_all(bind=engine)
 
-db = SessionLocal()
+require_login()
+
+Base.metadata.create_all(bind=engine)
 
 
 def ensure_columns():
-    db.close()
-db = SessionLocal()
     try:
+        with engine.connect() as conn:
+            columns = conn.execute(text("PRAGMA table_info(shipments)")).fetchall()
+            column_names = [col[1] for col in columns]
+
+            if "is_edited" not in column_names:
+                conn.execute(
+                    text(
+                        "ALTER TABLE shipments "
+                        "ADD COLUMN is_edited BOOLEAN DEFAULT 0"
+                    )
+                )
+                conn.commit()
+
+    except Exception:
+        pass
+
+
+ensure_columns()
+
+db = SessionLocal()
         with engine.connect() as conn:
             columns = conn.execute(text("PRAGMA table_info(shipments)")).fetchall()
             column_names = [col[1] for col in columns]
