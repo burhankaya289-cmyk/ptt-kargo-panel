@@ -5,9 +5,21 @@ def require_login():
     if "logged_in" not in st.session_state:
         st.session_state.logged_in = False
 
-    if not st.session_state.logged_in:
-        st.set_page_config(layout="wide", initial_sidebar_state="collapsed")
+    if "username" not in st.session_state:
+        st.session_state.username = ""
 
+    if "role" not in st.session_state:
+        st.session_state.role = ""
+
+    query_user = st.query_params.get("user", "")
+    query_role = st.query_params.get("role", "")
+
+    if query_user and query_role and not st.session_state.logged_in:
+        st.session_state.logged_in = True
+        st.session_state.username = query_user
+        st.session_state.role = query_role
+
+    if not st.session_state.logged_in:
         st.markdown("""
         <style>
         section[data-testid="stSidebar"] {
@@ -17,6 +29,10 @@ def require_login():
         """, unsafe_allow_html=True)
 
         st.error("Bu sayfayı görmek için giriş yapmalısınız.")
+
+        if st.button("Giriş ekranına dön"):
+            st.switch_page("app.py")
+
         st.stop()
 
 
@@ -29,4 +45,4 @@ def current_role():
 
 
 def is_admin():
-    return current_role() == "Admin"
+    return str(current_role()).strip().lower() == "admin"
