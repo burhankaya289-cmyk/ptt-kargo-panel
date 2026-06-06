@@ -58,12 +58,11 @@ section[data-testid="stSidebar"] > div {
 }
 
 .sidebar-logo {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    padding: 14px 14px 18px 14px;
-    margin: 0 0 18px 0;
-    border-bottom: 1px solid rgba(255,255,255,0.08);
+    display: flex !important;
+    align-items: center !important;
+    gap: 12px !important;
+    padding: 12px 10px 20px 10px !important;
+    margin-bottom: 12px !important;
 }
 
 .sidebar-icon {
