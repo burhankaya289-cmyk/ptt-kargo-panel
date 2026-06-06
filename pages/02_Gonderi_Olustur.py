@@ -1,4 +1,6 @@
+import pandas as pd
 import streamlit as st
+from io import BytesIO
 
 from utils.auth import require_login
 from database.database import SessionLocal, engine
@@ -56,14 +58,17 @@ h2, h3 {
 }
 
 .stTextInput label,
-.stNumberInput label {
+.stNumberInput label,
+.stFileUploader label,
+.stSelectbox label {
     font-size: 12px !important;
     color: #334155 !important;
     font-weight: 700 !important;
 }
 
 .stTextInput input,
-.stNumberInput input {
+.stNumberInput input,
+.stSelectbox div[data-baseweb="select"] > div {
     background: #f8fafc !important;
     border: 1px solid #dbe3ef !important;
     border-radius: 12px !important;
@@ -71,14 +76,16 @@ h2, h3 {
     font-size: 13px !important;
 }
 
-.stButton button {
+.stButton button,
+.stDownloadButton button {
     border-radius: 12px !important;
     min-height: 42px !important;
     font-weight: 800 !important;
     border: 1px solid #dbe3ef !important;
 }
 
-.stButton button:hover {
+.stButton button:hover,
+.stDownloadButton button:hover {
     border-color: #1672f3 !important;
     color: #1672f3 !important;
 }
@@ -149,6 +156,26 @@ div[data-testid="stButton"] button[kind="primary"] {
     font-weight: 700;
     margin-top: 8px;
 }
+
+.error-box {
+    background: #fff1f2;
+    color: #991b1b;
+    border: 1px solid #fecdd3;
+    border-radius: 14px;
+    padding: 12px;
+    font-size: 13px;
+    font-weight: 700;
+}
+
+.ok-box {
+    background: #ecfdf5;
+    color: #166534;
+    border: 1px solid #bbf7d0;
+    border-radius: 14px;
+    padding: 12px;
+    font-size: 13px;
+    font-weight: 700;
+}
 </style>
 """, unsafe_allow_html=True)
 
@@ -165,6 +192,35 @@ def norm(value):
 
 def temizle(value):
     return str(value or "").strip()
+
+
+def sayi(value, default=0.0):
+    try:
+        if pd.isna(value):
+            return default
+        if str(value).strip() == "":
+            return default
+        return float(value)
+    except Exception:
+        return default
+
+
+def adet_sayi(value):
+    try:
+        if pd.isna(value):
+            return 1
+        value = int(float(value))
+        return max(value, 1)
+    except Exception:
+        return 1
+
+
+def all_branches():
+    return db.query(Branch).order_by(Branch.branch_code.asc()).all()
+
+
+def all_products():
+    return db.query(ProductDimension).order_by(ProductDimension.product_name.asc()).all()
 
 
 def kalan_barkod_sayisi():
@@ -206,22 +262,6 @@ def get_available_barcodes(count):
             break
 
     return result
-
-
-def all_branches():
-    return (
-        db.query(Branch)
-        .order_by(Branch.branch_code.asc())
-        .all()
-    )
-
-
-def all_products():
-    return (
-        db.query(ProductDimension)
-        .order_by(ProductDimension.product_name.asc())
-        .all()
-    )
 
 
 def find_branch(search_text):
@@ -296,7 +336,8 @@ def save_cart():
             height=item["height"],
             weight=item["weight"],
             created_by=st.session_state.get("username", "admin"),
-            is_printed=False
+            is_printed=False,
+            is_edited=False
         )
 
         db.add(shipment)
@@ -314,6 +355,173 @@ def save_cart():
     st.session_state.sepet = []
     st.success("Gönderiler kaydedildi.")
     st.rerun()
+
+
+def excel_output(df):
+    output = BytesIO()
+    df.to_excel(output, index=False)
+    output.seek(0)
+    return output
+
+
+def excel_template():
+    df = pd.DataFrame([
+        {
+            "Şube Kodu": "0001",
+            "Şube Adı": "",
+            "Ürün İçeriği": "KALEM",
+            "Adet": 1,
+            "En": "",
+            "Boy": "",
+            "Yükseklik": "",
+            "Ağırlık": "",
+            "Telefon": ""
+        }
+    ])
+
+    return excel_output(df)
+
+
+def create_bulk_shipments(df):
+    created = 0
+    errors = []
+
+    required_columns = [
+        "Şube Kodu",
+        "Şube Adı",
+        "Ürün İçeriği",
+        "Adet",
+        "En",
+        "Boy",
+        "Yükseklik",
+        "Ağırlık"
+    ]
+
+    for col in required_columns:
+        if col not in df.columns:
+            errors.append({
+                "Satır": "-",
+                "Hata": f"Eksik kolon: {col}"
+            })
+
+    if errors:
+        return created, errors
+
+    needed_barcodes = 0
+
+    for _, row in df.iterrows():
+        needed_barcodes += adet_sayi(row.get("Adet", 1))
+
+    available_barcodes = get_available_barcodes(needed_barcodes)
+
+    if len(available_barcodes) < needed_barcodes:
+        errors.append({
+            "Satır": "-",
+            "Hata": f"Yetersiz barkod. Gerekli: {needed_barcodes}, Kalan: {len(available_barcodes)}"
+        })
+        return created, errors
+
+    barcode_index = 0
+
+    for index, row in df.iterrows():
+        row_no = index + 2
+
+        try:
+            branch_code_excel = temizle(row.get("Şube Kodu", ""))
+            branch_name_excel = temizle(row.get("Şube Adı", ""))
+            product_name_excel = temizle(row.get("Ürün İçeriği", ""))
+
+            if not branch_code_excel and not branch_name_excel:
+                errors.append({
+                    "Satır": row_no,
+                    "Hata": "Şube Kodu veya Şube Adı boş."
+                })
+                continue
+
+            if not product_name_excel:
+                errors.append({
+                    "Satır": row_no,
+                    "Hata": "Ürün İçeriği boş."
+                })
+                continue
+
+            branch = find_branch(branch_code_excel) or find_branch(branch_name_excel)
+
+            if branch:
+                branch_code = branch.branch_code
+                branch_name = branch.branch_name
+                recipient_name = branch.branch_name
+                address = branch.address or ""
+                district = branch.district or ""
+                city = branch.city or ""
+            else:
+                branch_code = branch_code_excel
+                branch_name = branch_name_excel
+                recipient_name = branch_name_excel or branch_code_excel
+                address = ""
+                district = ""
+                city = ""
+
+            product = find_product(product_name_excel)
+
+            if product:
+                product_name = product.product_name
+                default_width = float(product.width or 0)
+                default_length = float(product.length or 0)
+                default_height = float(product.height or 0)
+                default_weight = float(product.weight or 0)
+            else:
+                product_name = product_name_excel
+                default_width = 0.0
+                default_length = 0.0
+                default_height = 0.0
+                default_weight = 0.0
+
+            width = sayi(row.get("En", ""), default_width)
+            length = sayi(row.get("Boy", ""), default_length)
+            height = sayi(row.get("Yükseklik", ""), default_height)
+            weight = sayi(row.get("Ağırlık", ""), default_weight)
+            adet = adet_sayi(row.get("Adet", 1))
+            phone = temizle(row.get("Telefon", ""))
+
+            for _ in range(adet):
+                barcode = available_barcodes[barcode_index]
+                barcode_index += 1
+
+                shipment = Shipment(
+                    barcode=barcode.barcode,
+                    tracking_number=barcode.barcode,
+                    branch_code=branch_code,
+                    branch_name=branch_name,
+                    recipient_name=recipient_name,
+                    address=address,
+                    district=district,
+                    city=city,
+                    phone=phone,
+                    product_name=product_name,
+                    width=width,
+                    length=length,
+                    height=height,
+                    weight=weight,
+                    created_by=st.session_state.get("username", "admin"),
+                    is_printed=False,
+                    is_edited=False
+                )
+
+                db.add(shipment)
+                barcode.is_used = True
+                created += 1
+
+        except Exception as e:
+            errors.append({
+                "Satır": row_no,
+                "Hata": str(e)
+            })
+
+    if created > 0:
+        db.commit()
+
+    return created, errors
 
 
 top_left, top_right = st.columns([4, 1], vertical_alignment="center")
@@ -334,19 +542,13 @@ with top_right:
 st.write("")
 st.write("")
 
-tab1, tab2 = st.tabs(["Tekli Gönderi", "Çoklu Gönderi"])
-
-with tab2:
-    st.info("Çoklu gönderi daha sonra eklenecek.")
+tab1, tab2 = st.tabs(["Tekli Gönderi", "Toplu Gönderi"])
 
 with tab1:
-
     left, right = st.columns([1, 1.38], gap="large")
 
     with left:
-
         with st.container(border=True):
-
             st.markdown('<div class="clean-title">Alıcı (Şube)</div>', unsafe_allow_html=True)
 
             branch_search = st.text_input(
@@ -382,7 +584,6 @@ with tab1:
                 default_city = ""
 
         with st.container(border=True):
-
             st.markdown('<div class="clean-title">Ürün Bilgileri</div>', unsafe_allow_html=True)
 
             product_search = st.text_input(
@@ -456,7 +657,6 @@ with tab1:
                 weight = st.number_input("Ağırlık (G)", min_value=0.0, value=default_weight, step=1.0)
 
             if st.button("+  Kutu Ekle", use_container_width=True, type="primary"):
-
                 if not temizle(default_recipient):
                     st.error("Alıcı / Şube bilgisi boş olamaz.")
 
@@ -496,9 +696,7 @@ with tab1:
                         st.rerun()
 
     with right:
-
         with st.container(border=True):
-
             h1, h2, h3 = st.columns([3, 1, 1])
 
             with h1:
@@ -517,16 +715,13 @@ with tab1:
                     save_cart()
 
             if not st.session_state.sepet:
-
                 st.markdown(
                     '<div class="cart-empty">Henüz kutu eklenmedi.</div>',
                     unsafe_allow_html=True
                 )
 
             else:
-
                 for index, item in enumerate(st.session_state.sepet):
-
                     st.markdown(
                         f"""
                         <div class="cart-item">
@@ -557,3 +752,89 @@ with tab1:
                         if st.button("Sil", key=f"delete_{index}"):
                             st.session_state.sepet.pop(index)
                             st.rerun()
+
+with tab2:
+    left_bulk, right_bulk = st.columns([1, 1.25], gap="large")
+
+    with left_bulk:
+        with st.container(border=True):
+            st.markdown('<div class="clean-title">Excel Şablonu</div>', unsafe_allow_html=True)
+
+            st.write(
+                "Toplu gönderi için Excel dosyanız aşağıdaki kolonları içermelidir:"
+            )
+
+            st.code(
+                "Şube Kodu | Şube Adı | Ürün İçeriği | Adet | En | Boy | Yükseklik | Ağırlık | Telefon"
+            )
+
+            st.download_button(
+                "📥 Excel Şablonu İndir",
+                excel_template(),
+                file_name="toplu_gonderi_sablonu.xlsx",
+                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                use_container_width=True
+            )
+
+        with st.container(border=True):
+            st.markdown('<div class="clean-title">Excel Yükle</div>', unsafe_allow_html=True)
+
+            uploaded_file = st.file_uploader(
+                "Toplu Gönderi Excel Dosyası",
+                type=["xlsx"]
+            )
+
+    with right_bulk:
+        with st.container(border=True):
+            st.markdown('<div class="clean-title">Aktarım Durumu</div>', unsafe_allow_html=True)
+
+            if uploaded_file is None:
+                st.markdown(
+                    '<div class="cart-empty">Henüz Excel yüklenmedi.</div>',
+                    unsafe_allow_html=True
+                )
+
+            else:
+                try:
+                    df = pd.read_excel(uploaded_file)
+
+                    st.markdown(
+                        f'<div class="ok-box">{len(df)} satır okundu.</div>',
+                        unsafe_allow_html=True
+                    )
+
+                    st.write("")
+                    st.dataframe(df.head(20), use_container_width=True)
+
+                    toplam_adet = 0
+
+                    if "Adet" in df.columns:
+                        for _, row in df.iterrows():
+                            toplam_adet += adet_sayi(row.get("Adet", 1))
+
+                    st.info(f"Bu dosyadan yaklaşık {toplam_adet} gönderi oluşturulacak.")
+
+                    if st.button("🚀 Toplu Gönderileri Oluştur", use_container_width=True, type="primary"):
+                        created, errors = create_bulk_shipments(df)
+
+                        if created:
+                            st.success(f"{created} gönderi oluşturuldu.")
+
+                        if errors:
+                            st.warning(f"{len(errors)} hata bulundu.")
+                            error_df = pd.DataFrame(errors)
+                            st.dataframe(error_df, use_container_width=True)
+
+                            st.download_button(
+                                "Hata Raporu İndir",
+                                excel_output(error_df),
+                                file_name="toplu_gonderi_hata_raporu.xlsx",
+                                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                                use_container_width=True
+                            )
+
+                except Exception as e:
+                    st.markdown(
+                        f'<div class="error-box">Excel okunamadı: {e}</div>',
+                        unsafe_allow_html=True
+                    )
