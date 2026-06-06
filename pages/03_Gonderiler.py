@@ -25,6 +25,8 @@ db = SessionLocal()
 
 
 def ensure_columns():
+    db.close()
+db = SessionLocal()
     try:
         with engine.connect() as conn:
             columns = conn.execute(text("PRAGMA table_info(shipments)")).fetchall()
