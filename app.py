@@ -315,9 +315,28 @@ st.sidebar.markdown("---")
 
 st.sidebar.markdown(
     f"""
-    <div style="position:fixed; bottom:72px; left:24px;">
-        <div style="color:white; font-weight:800; font-size:13px;">{st.session_state.username}</div>
-        <div style="color:#94a3b8; font-size:12px;">{st.session_state.role}</div>
+    <div style="
+        background:rgba(255,255,255,.06);
+        border:1px solid rgba(255,255,255,.08);
+        border-radius:14px;
+        padding:12px;
+        margin-top:20px;
+    ">
+        <div style="
+            color:white;
+            font-weight:800;
+            font-size:13px;
+        ">
+            👤 {st.session_state.username}
+        </div>
+
+        <div style="
+            color:#94a3b8;
+            font-size:12px;
+            margin-top:3px;
+        ">
+            {st.session_state.role}
+        </div>
     </div>
     """,
     unsafe_allow_html=True
