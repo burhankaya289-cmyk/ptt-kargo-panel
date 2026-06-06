@@ -313,28 +313,15 @@ pg = st.navigation(pages)
 
 st.sidebar.markdown("---")
 
+st.sidebar.markdown("---")
+
 st.sidebar.markdown(
     f"""
-    <div style="
-        background:rgba(255,255,255,.06);
-        border:1px solid rgba(255,255,255,.08);
-        border-radius:14px;
-        padding:12px;
-        margin-top:20px;
-    ">
-        <div style="
-            color:white;
-            font-weight:800;
-            font-size:13px;
-        ">
+    <div style="background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.08); border-radius:14px; padding:12px;">
+        <div style="color:white; font-weight:800; font-size:14px;">
             👤 {st.session_state.username}
         </div>
-
-        <div style="
-            color:#94a3b8;
-            font-size:12px;
-            margin-top:3px;
-        ">
+        <div style="color:#94a3b8; font-size:12px; margin-top:4px;">
             {st.session_state.role}
         </div>
     </div>
