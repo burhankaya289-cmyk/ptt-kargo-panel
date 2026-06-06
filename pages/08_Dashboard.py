@@ -7,7 +7,7 @@ from database.models import Base, Shipment, Barcode, Branch, ProductDimension, U
 
 require_login()
 
-Base.metadata.create_all(bind=engine)
+
 
 db = SessionLocal()
 
