@@ -778,7 +778,14 @@ else:
     for item in filtered:
         status = get_status(item)
 
-                st.markdown('<div class="shipment-card">', unsafe_allow_html=True)
+                else:
+    for item in filtered:
+        status = get_status(item)
+
+        st.markdown(
+            '<div class="shipment-card">',
+            unsafe_allow_html=True
+        )
 
         c0, c1, c2, c3, c4 = st.columns([0.35, 2.3, 1.4, 1.4, 1.2])
 
