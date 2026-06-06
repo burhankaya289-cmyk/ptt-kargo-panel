@@ -153,7 +153,11 @@ div[data-testid="stVerticalBlockBorderWrapper"] {
     border-radius: 14px !important;
 }
 
-button[kind="header"] {
+[data-testid="stSidebarCollapseButton"] {
+    display: none !important;
+}
+
+[data-testid="stBaseButton-headerNoPadding"] {
     display: none !important;
 }
 
