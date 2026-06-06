@@ -21,10 +21,6 @@ require_login()
 
 Base.metadata.create_all(bind=engine)
 
-require_login()
-
-Base.metadata.create_all(bind=engine)
-
 
 def ensure_columns():
     try:
@@ -48,23 +44,6 @@ def ensure_columns():
 ensure_columns()
 
 db = SessionLocal()
-        with engine.connect() as conn:
-            columns = conn.execute(text("PRAGMA table_info(shipments)")).fetchall()
-            column_names = [col[1] for col in columns]
-
-            if "is_edited" not in column_names:
-                conn.execute(
-                    text(
-                        "ALTER TABLE shipments "
-                        "ADD COLUMN is_edited BOOLEAN DEFAULT 0"
-                    )
-                )
-                conn.commit()
-    except Exception:
-        pass
-
-
-ensure_columns()
 
 
 try:
@@ -78,6 +57,18 @@ try:
 
     if os.path.exists("fonts/DejaVuSans-Bold.ttf"):
         pdfmetrics.registerFont(
+            TTFont("DejaVu-Bold", "fonts/DejaVuSans-Bold.ttf")
+        )
+        PDF_FONT_BOLD = "DejaVu-Bold"
+    else:
+        PDF_FONT_BOLD = "Helvetica-Bold"
+
+except Exception:
+    PDF_FONT = "Helvetica"
+    PDF_FONT_BOLD = "Helvetica-Bold"
+
+
+st.markdown("""
             TTFont("DejaVu-Bold", "fonts/DejaVuSans-Bold.ttf")
         )
         PDF_FONT_BOLD = "DejaVu-Bold"
