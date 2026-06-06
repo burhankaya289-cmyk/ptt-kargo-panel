@@ -171,63 +171,74 @@ div[data-testid="stButton"] button[kind="primary"] {
     background: #ffffff;
     border: 1px solid #dbe3ef;
     border-radius: 18px;
-    padding: 16px;
-    margin-bottom: 12px;
-    box-shadow: 0 10px 28px rgba(15,23,42,0.04);
+    padding: 16px 18px;
+    margin-bottom: 14px;
+    box-shadow: 0 10px 28px rgba(15,23,42,0.05);
+}
+
+.shipment-main {
+    display: grid;
+    grid-template-columns: 40px 2.2fr 1.4fr 1.4fr 1.2fr;
+    gap: 14px;
+    align-items: center;
+}
+
+.shipment-actions {
+    display: grid;
+    grid-template-columns: 110px 110px 110px 110px 1fr;
+    gap: 10px;
+    margin-top: 12px;
 }
 
 .shipment-title {
     font-size: 15px;
     font-weight: 800;
     color: #0f172a;
+    margin-bottom: 4px;
 }
 
 .shipment-sub {
     font-size: 12px;
     color: #64748b;
-    margin-top: 4px;
+}
+
+.status-green,
+.status-red,
+.status-yellow {
+    padding: 7px 12px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 800;
+    text-align: center;
+    white-space: nowrap;
 }
 
 .status-green {
     background: #e8f8ee;
     color: #17623a;
-    padding: 7px 10px;
-    border-radius: 999px;
-    font-size: 12px;
-    font-weight: 800;
-    text-align: center;
 }
 
 .status-red {
     background: #ffe8e8;
     color: #8a1f1f;
-    padding: 7px 10px;
-    border-radius: 999px;
-    font-size: 12px;
-    font-weight: 800;
-    text-align: center;
 }
 
 .status-yellow {
     background: #fff6db;
     color: #8a6100;
-    padding: 7px 10px;
-    border-radius: 999px;
-    font-size: 12px;
-    font-weight: 800;
-    text-align: center;
 }
 
 .mini-label {
     color: #64748b;
     font-size: 11px;
     font-weight: 700;
+    margin-bottom: 3px;
 }
 
 .mini-value {
     color: #0f172a;
     font-size: 13px;
-    font-weight: 700;
+    font-weight: 800;
 }
 
 .empty-box {
