@@ -13,18 +13,16 @@ db = SessionLocal()
 st.markdown("""
 <style>
 .block-container {
-    padding-top: 1.4rem !important;
-    padding-left: 1.6rem !important;
-    padding-right: 1.6rem !important;
+    padding-top: 1.6rem !important;
+    padding-left: 1.8rem !important;
+    padding-right: 1.8rem !important;
     max-width: 100% !important;
 }
 
 h1 {
     font-size: 30px !important;
     font-weight: 800 !important;
-    line-height: 1.1 !important;
-    margin: 0 !important;
-    padding: 0 !important;
+    margin-bottom: 0 !important;
 }
 
 h2, h3 {
@@ -32,33 +30,10 @@ h2, h3 {
     font-weight: 800 !important;
 }
 
-.page-header {
-    background: white;
-    border: 1px solid #dbe3ef;
-    border-radius: 18px;
-    padding: 22px 22px;
-    margin-bottom: 18px;
-    box-shadow: 0 8px 24px rgba(15,23,42,0.04);
-}
-
-.page-header-grid {
-    display: grid;
-    grid-template-columns: 1fr auto;
-    align-items: center;
-    gap: 16px;
-}
-
-.page-title {
-    font-size: 30px;
-    font-weight: 800;
-    color: #020617;
-    line-height: 1.1;
-}
-
 .page-subtitle {
     color: #64748b;
     font-size: 13px;
-    margin-top: 10px;
+    margin-top: 6px;
 }
 
 .top-badge {
@@ -68,62 +43,106 @@ h2, h3 {
     border-radius: 14px;
     font-weight: 800;
     font-size: 13px;
-    min-width: 260px;
     text-align: center;
+    min-width: 260px;
 }
 
 [data-testid="stVerticalBlockBorderWrapper"] {
     border-radius: 18px !important;
-    background: white !important;
+    background: #ffffff !important;
     border: 1px solid #dbe3ef !important;
-    box-shadow: 0 8px 24px rgba(15,23,42,0.04) !important;
+    box-shadow: 0 12px 34px rgba(15,23,42,0.05) !important;
 }
 
-.stButton button {
-    border-radius: 12px !important;
-    min-height: 40px !important;
-    font-weight: 800 !important;
+.stTextInput label,
+.stTextArea label,
+.stNumberInput label,
+.stSelectbox label {
+    font-size: 12px !important;
+    color: #334155 !important;
+    font-weight: 600 !important;
 }
 
 .stTextInput input,
 .stTextArea textarea,
-.stNumberInput input,
-.stSelectbox div {
+.stNumberInput input {
+    background: #f8fafc !important;
+    border: 1px solid #dbe3ef !important;
     border-radius: 12px !important;
-    min-height: 40px !important;
+    min-height: 44px !important;
     font-size: 13px !important;
 }
 
-.cart-card {
-    background: #f8fafc;
-    border: 1px solid #dbe3ef;
-    border-radius: 14px;
-    padding: 12px 14px;
-    margin-bottom: 10px;
+.stSelectbox div[data-baseweb="select"] > div {
+    background: #f8fafc !important;
+    border: 1px solid #dbe3ef !important;
+    border-radius: 12px !important;
+    min-height: 44px !important;
+    font-size: 13px !important;
 }
 
-.cart-title {
-    font-weight: 800;
-    color: #0f172a;
-    font-size: 13px;
+.stButton button {
+    border-radius: 12px !important;
+    min-height: 42px !important;
+    font-weight: 800 !important;
+    border: 1px solid #dbe3ef !important;
 }
 
-.cart-sub {
-    color: #64748b;
-    font-size: 12px;
-    margin-top: 3px;
+.stButton button:hover {
+    border-color: #1672f3 !important;
+    color: #1672f3 !important;
 }
 
-.empty-cart {
+.primary-blue button {
+    background: #1669f2 !important;
+    color: white !important;
+    border: 1px solid #1669f2 !important;
+}
+
+.cart-empty {
     border: 2px dashed #dbe3ef;
     border-radius: 16px;
-    height: 120px;
+    min-height: 330px;
     display: flex;
     align-items: center;
     justify-content: center;
     color: #64748b;
+    font-size: 15px;
+    font-weight: 600;
+}
+
+.cart-item {
+    background: #f8fafc;
+    border: 1px solid #dbe3ef;
+    border-radius: 14px;
+    padding: 14px 16px;
+    margin-bottom: 12px;
+}
+
+.cart-item-title {
     font-size: 14px;
-    background: #ffffff;
+    font-weight: 800;
+    color: #0f172a;
+}
+
+.cart-item-sub {
+    color: #64748b;
+    font-size: 12px;
+    margin-top: 4px;
+}
+
+.small-label {
+    font-size: 12px;
+    color: #334155;
+    font-weight: 700;
+    margin-bottom: 5px;
+}
+
+.clean-title {
+    font-size: 17px;
+    font-weight: 800;
+    color: #0f172a;
+    margin-bottom: 18px;
 }
 </style>
 """, unsafe_allow_html=True)
@@ -191,12 +210,10 @@ def get_branch_options():
         .all()
     )
 
-    options = [""]
+    options = ["Şube kodu veya adı yazın..."]
 
     for b in branches:
-        options.append(
-            f"{b.branch_code} - {b.branch_name}"
-        )
+        options.append(f"{b.branch_code} - {b.branch_name}")
 
     return options, branches
 
@@ -208,7 +225,7 @@ def get_product_options():
         .all()
     )
 
-    options = [""]
+    options = ["Ürün içeriği yazın..."]
 
     for p in products:
         options.append(p.product_name)
@@ -219,13 +236,11 @@ def get_product_options():
 def branch_from_option(option, branches):
     option = temizle(option)
 
-    if not option:
+    if not option or option == "Şube kodu veya adı yazın...":
         return None
 
     for b in branches:
-        label = f"{b.branch_code} - {b.branch_name}"
-
-        if option == label:
+        if option == f"{b.branch_code} - {b.branch_name}":
             return b
 
     return None
@@ -234,7 +249,7 @@ def branch_from_option(option, branches):
 def product_from_option(option, products):
     option = temizle(option)
 
-    if not option:
+    if not option or option == "Ürün içeriği yazın...":
         return None
 
     for p in products:
@@ -286,22 +301,23 @@ def save_cart():
     st.rerun()
 
 
-st.markdown(
-    f"""
-    <div class="page-header">
-        <div class="page-header-grid">
-            <div>
-                <div class="page-title">Barkod Oluştur</div>
-                <div class="page-subtitle">Şubeye ürün gönderimi için barkod oluşturun.</div>
-            </div>
-            <div class="top-badge">
-                Havuzda {kalan_barkod_sayisi()} kullanılmamış barkod
-            </div>
-        </div>
-    </div>
-    """,
-    unsafe_allow_html=True
-)
+top_left, top_right = st.columns([4, 1])
+
+with top_left:
+    st.title("Barkod Oluştur")
+    st.markdown(
+        '<div class="page-subtitle">Şubeye ürün gönderimi için barkod oluşturun.</div>',
+        unsafe_allow_html=True
+    )
+
+with top_right:
+    st.markdown(
+        f'<div class="top-badge">Havuzda {kalan_barkod_sayisi()} kullanılmamış barkod</div>',
+        unsafe_allow_html=True
+    )
+
+st.write("")
+st.write("")
 
 tab1, tab2 = st.tabs(["Tekli Gönderi", "Çoklu Gönderi"])
 
@@ -310,27 +326,24 @@ with tab2:
 
 with tab1:
 
-    left, right = st.columns([1, 2.25], gap="large")
+    left, right = st.columns([1, 1.38], gap="large")
 
     with left:
 
         with st.container(border=True):
 
-            st.subheader("Alıcı (Şube)")
+            st.markdown('<div class="clean-title">Alıcı (Şube)</div>', unsafe_allow_html=True)
 
             branch_options, branches = get_branch_options()
 
             selected_branch_label = st.selectbox(
-                "Şube kodu veya adı yazın",
+                "Şube seçimi",
                 branch_options,
                 index=0,
-                placeholder="Şube kodu veya adı yazın..."
+                label_visibility="collapsed"
             )
 
-            selected_branch = branch_from_option(
-                selected_branch_label,
-                branches
-            )
+            selected_branch = branch_from_option(selected_branch_label, branches)
 
             if selected_branch:
                 default_branch_code = selected_branch.branch_code
@@ -349,21 +362,18 @@ with tab1:
 
         with st.container(border=True):
 
-            st.subheader("Ürün Bilgileri")
+            st.markdown('<div class="clean-title">Ürün Bilgileri</div>', unsafe_allow_html=True)
 
             product_options, products = get_product_options()
 
             selected_product_label = st.selectbox(
-                "Ürün İçeriği (max 30)",
+                "Ürün seçimi",
                 product_options,
                 index=0,
-                placeholder="Ürün içeriği yazın..."
+                label_visibility="collapsed"
             )
 
-            product = product_from_option(
-                selected_product_label,
-                products
-            )
+            product = product_from_option(selected_product_label, products)
 
             if product:
                 product_name = product.product_name
@@ -373,13 +383,13 @@ with tab1:
                 default_weight = float(product.weight or 0)
                 st.success("Ürün ölçüsü bulundu.")
             else:
-                product_name = selected_product_label
+                product_name = ""
                 default_width = 0.0
                 default_length = 0.0
                 default_height = 0.0
                 default_weight = 0.0
 
-            st.write("Adet")
+            st.markdown('<div class="small-label">Adet</div>', unsafe_allow_html=True)
 
             a1, a2, a3 = st.columns([1, 5, 1])
 
@@ -397,7 +407,6 @@ with tab1:
                     step=1,
                     label_visibility="collapsed"
                 )
-
                 st.session_state.adet = int(adet)
 
             with a3:
@@ -485,19 +494,27 @@ with tab1:
 
         with st.container(border=True):
 
-            h1, h2 = st.columns([3, 1])
+            h1, h2, h3 = st.columns([3, 1, 1])
 
             with h1:
-                st.subheader(f"Eklenen Kutular ({len(st.session_state.sepet)})")
+                st.markdown(
+                    f'<div class="clean-title">Eklenen Kutular ({len(st.session_state.sepet)})</div>',
+                    unsafe_allow_html=True
+                )
 
             with h2:
+                if st.button("Sepeti Temizle", use_container_width=True):
+                    st.session_state.sepet = []
+                    st.rerun()
+
+            with h3:
                 if st.button("Tümünü Kaydet", use_container_width=True):
                     save_cart()
 
             if not st.session_state.sepet:
 
                 st.markdown(
-                    '<div class="empty-cart">Henüz kutu eklenmedi.</div>',
+                    '<div class="cart-empty">Henüz kutu eklenmedi.</div>',
                     unsafe_allow_html=True
                 )
 
@@ -507,11 +524,11 @@ with tab1:
 
                     st.markdown(
                         f"""
-                        <div class="cart-card">
-                            <div class="cart-title">
+                        <div class="cart-item">
+                            <div class="cart-item-title">
                                 {item['barcode']} | {item['recipient_name']}
                             </div>
-                            <div class="cart-sub">
+                            <div class="cart-item-sub">
                                 {item['product_name']} |
                                 {item['width']}x{item['length']}x{item['height']} |
                                 {item['weight']} gr
@@ -581,16 +598,3 @@ with tab1:
                                 st.session_state.sepet[index]["weight"] = new_weight
                                 st.session_state[f"edit_mode_{index}"] = False
                                 st.rerun()
-
-                st.divider()
-
-                t1, t2 = st.columns(2)
-
-                with t1:
-                    if st.button("Sepeti Temizle", use_container_width=True):
-                        st.session_state.sepet = []
-                        st.rerun()
-
-                with t2:
-                    if st.button("Gönderileri Kaydet", use_container_width=True):
-                        save_cart()
