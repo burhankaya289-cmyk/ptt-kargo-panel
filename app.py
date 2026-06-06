@@ -289,18 +289,16 @@ if not st.session_state.logged_in:
     login_page()
     st.stop()
 
-st.sidebar.markdown(
-    """
-    <div class="sidebar-logo">
-        <div class="sidebar-icon">▣</div>
-        <div>
-            <div class="sidebar-title">Barkod Panel</div>
-            <div class="sidebar-sub">Yönetim Sistemi</div>
-        </div>
-    </div>
-    """,
-    unsafe_allow_html=True
-)
+section[data-testid="stSidebar"]::before {
+    content: "▣  Barkod Panel\\A     Yönetim Sistemi";
+    white-space: pre-line;
+    display: block;
+    color: white;
+    font-weight: 800;
+    font-size: 16px;
+    line-height: 1.2;
+    padding: 22px 22px 18px 22px;
+}
 
 st.sidebar.markdown("---")
 
