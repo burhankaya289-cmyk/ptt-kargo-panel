@@ -10,6 +10,194 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
+st.markdown("""
+<style>
+/* GENEL ARKA PLAN */
+.stApp {
+    background: #f6f9fc !important;
+}
+
+/* ANA ALAN */
+.block-container {
+    padding-top: 2rem !important;
+    padding-left: 2.2rem !important;
+    padding-right: 2.2rem !important;
+    max-width: 100% !important;
+}
+
+/* GENEL FONT */
+html, body, div, span, p, label, input, textarea, button {
+    font-size: 13px !important;
+    font-family: Inter, "Segoe UI", Arial, sans-serif !important;
+}
+
+/* BAŞLIKLAR */
+h1 {
+    font-size: 30px !important;
+    font-weight: 800 !important;
+    color: #020617 !important;
+    margin-bottom: 0.25rem !important;
+}
+
+h2, h3 {
+    font-size: 17px !important;
+    font-weight: 700 !important;
+    color: #0f172a !important;
+}
+
+/* SOL MENÜ */
+section[data-testid="stSidebar"] {
+    background: linear-gradient(180deg, #071426 0%, #081b33 100%) !important;
+    min-width: 260px !important;
+    max-width: 260px !important;
+    border-right: 1px solid rgba(255,255,255,0.06);
+}
+
+section[data-testid="stSidebar"] * {
+    color: #cbd5e1 !important;
+    font-size: 14px !important;
+}
+
+/* STREAMLIT SIDEBAR ÜST BOŞLUK */
+section[data-testid="stSidebar"] > div {
+    padding-top: 1.2rem !important;
+}
+
+/* SIDEBAR BAŞLIK KARTI */
+.sidebar-logo {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 10px 20px 10px;
+    margin-bottom: 12px;
+}
+
+.sidebar-icon {
+    width: 44px;
+    height: 44px;
+    border-radius: 14px;
+    background: #1669f2;
+    color: white !important;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 22px !important;
+    font-weight: 800;
+}
+
+.sidebar-title {
+    color: white !important;
+    font-size: 16px !important;
+    font-weight: 800 !important;
+    line-height: 1.1;
+}
+
+.sidebar-sub {
+    color: #94a3b8 !important;
+    font-size: 12px !important;
+    margin-top: 2px;
+}
+
+/* SIDEBAR LINKLER */
+section[data-testid="stSidebar"] a {
+    border-radius: 12px !important;
+    padding: 9px 12px !important;
+    margin: 4px 0 !important;
+    color: #cbd5e1 !important;
+    text-decoration: none !important;
+}
+
+section[data-testid="stSidebar"] a:hover {
+    background: rgba(59,130,246,0.18) !important;
+    color: white !important;
+}
+
+section[data-testid="stSidebar"] a[aria-current="page"] {
+    background: #19365c !important;
+    color: white !important;
+    font-weight: 700 !important;
+}
+
+/* SIDEBAR BUTON */
+section[data-testid="stSidebar"] .stButton button {
+    background: transparent !important;
+    color: #cbd5e1 !important;
+    border: 0 !important;
+    text-align: left !important;
+    padding: 8px 4px !important;
+}
+
+/* KART TASARIMI */
+div[data-testid="stForm"],
+div[data-testid="stVerticalBlockBorderWrapper"] {
+    border-radius: 18px !important;
+}
+
+/* INPUTLAR */
+.stTextInput input,
+.stTextArea textarea,
+.stNumberInput input,
+.stSelectbox div {
+    background: #f8fafc !important;
+    border: 1px solid #dbe3ef !important;
+    border-radius: 12px !important;
+    min-height: 42px !important;
+    font-size: 13px !important;
+}
+
+/* BUTONLAR */
+.stButton button,
+.stDownloadButton button {
+    border-radius: 12px !important;
+    min-height: 38px !important;
+    font-size: 13px !important;
+    font-weight: 700 !important;
+    border: 1px solid #dbe3ef !important;
+}
+
+/* PRIMARY GİBİ MAVİ BUTON EFEKTİ */
+.stButton button:hover,
+.stDownloadButton button:hover {
+    border-color: #1672f3 !important;
+    color: #1672f3 !important;
+}
+
+/* ALERTLER */
+[data-testid="stAlert"] {
+    border-radius: 14px !important;
+}
+
+/* SIDEBAR COLLAPSE GİZLE */
+button[kind="header"] {
+    display: none !important;
+}
+
+/* SAĞ ÜST STREAMLIT MENÜLERİNİ BİRAZ SAKLA */
+#MainMenu {
+    visibility: hidden;
+}
+
+footer {
+    visibility: hidden;
+}
+
+/* SAYFA BOŞLUKLARI */
+hr {
+    margin-top: 0.7rem !important;
+    margin-bottom: 0.7rem !important;
+}
+
+/* LOGIN */
+.login-card {
+    background: white;
+    border: 1px solid #dbe3ef;
+    border-radius: 20px;
+    padding: 26px;
+    box-shadow: 0 12px 35px rgba(15,23,42,0.06);
+}
+</style>
+""", unsafe_allow_html=True)
+
 Base.metadata.create_all(bind=engine)
 
 db = SessionLocal()
@@ -44,25 +232,35 @@ def login_page():
     section[data-testid="stSidebar"] {
         display: none !important;
     }
-    html, body, div, span, p, label, input, textarea, button {
-        font-size: 12px !important;
-    }
     .block-container {
-        padding-top: 1rem !important;
-        max-width: 520px !important;
-    }
-    h1 {
-        font-size: 22px !important;
-        text-align: center;
-    }
-    .stButton button {
-        font-size: 12px !important;
-        min-height: 30px !important;
+        max-width: 560px !important;
+        padding-top: 5rem !important;
     }
     </style>
     """, unsafe_allow_html=True)
 
-    st.title("PTT Kargo Panel Giriş")
+    st.markdown(
+        """
+        <div style="text-align:center; margin-bottom:22px;">
+            <div style="
+                width:54px;
+                height:54px;
+                background:#1669f2;
+                border-radius:16px;
+                color:white;
+                display:inline-flex;
+                align-items:center;
+                justify-content:center;
+                font-size:26px;
+                font-weight:800;
+                margin-bottom:12px;
+            ">▣</div>
+            <h1 style="font-size:28px !important;">PTT Kargo Panel Giriş</h1>
+            <p style="color:#64748b;">Yönetim paneline erişmek için giriş yapın.</p>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
 
     username = st.text_input("Kullanıcı Adı")
     password = st.text_input("Şifre", type="password")
@@ -91,11 +289,32 @@ if not st.session_state.logged_in:
     login_page()
     st.stop()
 
-st.sidebar.success(
-    f"{st.session_state.username} | {st.session_state.role}"
+st.sidebar.markdown(
+    """
+    <div class="sidebar-logo">
+        <div class="sidebar-icon">▣</div>
+        <div>
+            <div class="sidebar-title">Barkod Panel</div>
+            <div class="sidebar-sub">Yönetim Sistemi</div>
+        </div>
+    </div>
+    """,
+    unsafe_allow_html=True
 )
 
-if st.sidebar.button("Çıkış Yap"):
+st.sidebar.markdown("---")
+
+st.sidebar.markdown(
+    f"""
+    <div style="position:fixed; bottom:70px; left:24px;">
+        <div style="color:white; font-weight:800; font-size:13px;">{st.session_state.username}</div>
+        <div style="color:#94a3b8; font-size:12px;">{st.session_state.role}</div>
+    </div>
+    """,
+    unsafe_allow_html=True
+)
+
+if st.sidebar.button("↪ Çıkış"):
     st.session_state.logged_in = False
     st.session_state.username = ""
     st.session_state.role = ""
@@ -107,17 +326,17 @@ if st.sidebar.button("Çıkış Yap"):
 
 pages = [
     st.Page("pages/08_Dashboard.py", title="Dashboard", icon="📊"),
-    st.Page("pages/02_Gonderi_Olustur.py", title="Gönderi Oluştur", icon="📦"),
-    st.Page("pages/03_Gonderiler.py", title="Gönderiler", icon="📋"),
+    st.Page("pages/02_Gonderi_Olustur.py", title="Gönderi Oluştur", icon="▥"),
+    st.Page("pages/03_Gonderiler.py", title="Oluşturulan Barkodlar", icon="☑"),
     st.Page("pages/04_Subeler.py", title="Şubeler", icon="🏢"),
-    st.Page("pages/06_Barkodlar.py", title="Barkodlar", icon="🏷️"),
-    st.Page("pages/05_Urun_Olculeri.py", title="Ürün Ölçüleri", icon="📐"),
+    st.Page("pages/06_Barkodlar.py", title="Barkod Import", icon="⇧"),
+    st.Page("pages/05_Urun_Olculeri.py", title="Ürün Ölçüleri", icon="🏷"),
     st.Page("pages/12_Yedekleme.py", title="Yedekleme", icon="💾"),
 ]
 
 if str(st.session_state.role).strip().lower() == "admin":
     pages.append(
-        st.Page("pages/07_Kullanicilar.py", title="Kullanıcılar", icon="👤")
+        st.Page("pages/07_Kullanicilar.py", title="Kullanıcılar", icon="👥")
     )
 
 pg = st.navigation(pages)
