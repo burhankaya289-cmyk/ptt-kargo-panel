@@ -49,7 +49,7 @@ h2, h3 {
 </style>
 """, unsafe_allow_html=True)
 
-Base.metadata.create_all(bind=engine)
+
 
 st.title("Şubeler")
 
