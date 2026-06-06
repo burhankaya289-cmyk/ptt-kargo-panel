@@ -247,6 +247,38 @@ h2, h3 {
     font-size: 14px;
     font-weight: 700;
 }
+.ship-card {
+    padding: 18px 18px;
+    border-radius: 18px;
+    border: 1px solid #dbe3ef;
+    background: #ffffff;
+    box-shadow: 0 10px 28px rgba(15,23,42,0.04);
+    margin-bottom: 14px;
+}
+
+.ship-label {
+    color: #64748b;
+    font-size: 12px;
+    font-weight: 800;
+    margin-bottom: 6px;
+}
+
+.ship-value {
+    color: #0f172a;
+    font-size: 14px;
+    font-weight: 900;
+}
+
+.ship-branch {
+    color: #0f172a;
+    font-size: 15px;
+    font-weight: 900;
+    margin-bottom: 8px;
+}
+
+.ship-actions button {
+    height: 38px !important;
+}
 </style>
 """, unsafe_allow_html=True)
 
@@ -664,83 +696,87 @@ else:
 
         with st.container(border=True):
 
-            row1, row2, row3, row4, row5 = st.columns([0.25, 2.4, 1.2, 1.4, 1.4])
+            c0, c1, c2, c3, c4, c5, c6 = st.columns(
+                [0.25, 2.8, 1.1, 1.1, 1.4, 1.2, 2.5],
+                vertical_alignment="center"
+            )
 
-            with row1:
+            with c0:
                 st.checkbox("", key=f"sec_{item.id}")
 
-            with row2:
-                st.markdown(
-                    """
-                    <div class="mini-label">Şube Adı</div>
-                    """,
-                    unsafe_allow_html=True
-                )
+            with c1:
                 st.markdown(
                     f"""
-                    <div class="mini-value">
+                    <div class="ship-branch">
                         {item.branch_name or item.recipient_name or "-"}
                     </div>
+                    <div class="ship-label">Şube Kodu</div>
+                    <div class="ship-value">{item.branch_code or "-"}</div>
                     """,
                     unsafe_allow_html=True
                 )
 
-            with row3:
-                st.markdown('<div class="mini-label">Şube Kodu</div>', unsafe_allow_html=True)
+            with c2:
                 st.markdown(
-                    f'<div class="mini-value">{item.branch_code or "-"}</div>',
+                    f"""
+                    <div class="ship-label">Ürün</div>
+                    <div class="ship-value">{item.product_name or "-"}</div>
+                    """,
                     unsafe_allow_html=True
                 )
 
-            with row4:
-                st.markdown('<div class="mini-label">Ürün</div>', unsafe_allow_html=True)
+            with c3:
                 st.markdown(
-                    f'<div class="mini-value">{item.product_name or "-"}</div>',
+                    f"""
+                    <div class="ship-label">Kullanıcı</div>
+                    <div class="ship-value">{item.created_by or "-"}</div>
+                    """,
                     unsafe_allow_html=True
                 )
 
-            with row5:
-                st.markdown('<div class="mini-label">Takip No</div>', unsafe_allow_html=True)
+            with c4:
                 st.markdown(
-                    f'<div class="mini-value">{item.tracking_number or "-"}</div>',
+                    f"""
+                    <div class="ship-label">Takip No</div>
+                    <div class="ship-value">{item.tracking_number or "-"}</div>
+                    """,
                     unsafe_allow_html=True
                 )
 
-            st.write("")
-
-            status_col, empty_col = st.columns([1.4, 4.6])
-
-            with status_col:
+            with c5:
+                st.markdown(
+                    '<div class="ship-label">Durum</div>',
+                    unsafe_allow_html=True
+                )
                 st.markdown(status_html(status), unsafe_allow_html=True)
 
-            st.write("")
+            with c6:
+                b1, b2, b3, b4 = st.columns(4)
 
-            b1, b2, b3, b4, b5 = st.columns([1.1, 1.1, 1.1, 1.1, 4.6])
+                with b1:
+                    if st.button("Detay", key=f"detay_{item.id}", use_container_width=True):
+                        st.session_state[f"detay_{item.id}"] = not st.session_state.get(
+                            f"detay_{item.id}", False
+                        )
+                        st.rerun()
 
-            with b1:
-                if st.button("Detay", key=f"detay_{item.id}", use_container_width=True):
-                    st.session_state[f"detay_{item.id}"] = not st.session_state.get(
-                        f"detay_{item.id}", False
-                    )
-                    st.rerun()
+                with b2:
+                    if st.button("Seç", key=f"sec_btn_{item.id}", use_container_width=True):
+                        st.session_state[f"sec_{item.id}"] = True
+                        st.rerun()
 
-            with b2:
-                if st.button("Seç", key=f"sec_btn_{item.id}", use_container_width=True):
-                    st.session_state[f"sec_{item.id}"] = True
-                    st.rerun()
+                with b3:
+                    if st.button("Düzenle", key=f"duzenle_{item.id}", use_container_width=True):
+                        st.session_state[f"edit_{item.id}"] = not st.session_state.get(
+                            f"edit_{item.id}", False
+                        )
+                        st.rerun()
 
-            with b3:
-                if st.button("Düzenle", key=f"duzenle_{item.id}", use_container_width=True):
-                    st.session_state[f"edit_{item.id}"] = not st.session_state.get(
-                        f"edit_{item.id}", False
-                    )
-                    st.rerun()
-
-            with b4:
-                if st.button("Sil", key=f"sil_{item.id}", use_container_width=True):
-                    db.delete(item)
-                    db.commit()
-                    st.rerun()
+                with b4:
+                    if st.button("Sil", key=f"sil_{item.id}", use_container_width=True):
+                        db.delete(item)
+                        db.commit()
+                        st.rerun()
 
             if st.session_state.get(f"detay_{item.id}", False):
                 st.info(
@@ -759,6 +795,10 @@ Telefon: {item.phone}
 
 Ürün: {item.product_name}
 
+Takip No: {item.tracking_number}
+
+Oluşturan Kullanıcı: {item.created_by}
+
 En: {item.width}
 
 Boy: {item.length}
@@ -766,38 +806,71 @@ Boy: {item.length}
 Yükseklik: {item.height}
 
 Ağırlık: {item.weight}
-
-Kullanıcı: {item.created_by}
 """
                 )
 
             if st.session_state.get(f"edit_{item.id}", False):
                 with st.form(f"edit_form_{item.id}"):
+
                     e1, e2 = st.columns(2)
 
                     with e1:
-                        recipient_name = st.text_input("Alıcı Adı", value=item.recipient_name or "")
-                        product_name = st.text_input("Ürün İçeriği", value=item.product_name or "")
-                        phone = st.text_input("Telefon", value=item.phone or "")
+                        recipient_name = st.text_input(
+                            "Alıcı Adı",
+                            value=item.recipient_name or ""
+                        )
+
+                        product_name = st.text_input(
+                            "Ürün İçeriği",
+                            value=item.product_name or ""
+                        )
+
+                        phone = st.text_input(
+                            "Telefon",
+                            value=item.phone or ""
+                        )
 
                     with e2:
-                        address = st.text_input("Adres", value=item.address or "")
-                        district = st.text_input("İlçe", value=item.district or "")
-                        city = st.text_input("İl", value=item.city or "")
+                        address = st.text_input(
+                            "Adres",
+                            value=item.address or ""
+                        )
+
+                        district = st.text_input(
+                            "İlçe",
+                            value=item.district or ""
+                        )
+
+                        city = st.text_input(
+                            "İl",
+                            value=item.city or ""
+                        )
 
                     o1, o2, o3, o4 = st.columns(4)
 
                     with o1:
-                        width = st.number_input("En", value=float(item.width or 0))
+                        width = st.number_input(
+                            "En",
+                            value=float(item.width or 0)
+                        )
 
                     with o2:
-                        length = st.number_input("Boy", value=float(item.length or 0))
+                        length = st.number_input(
+                            "Boy",
+                            value=float(item.length or 0)
+                        )
 
                     with o3:
-                        height = st.number_input("Yükseklik", value=float(item.height or 0))
+                        height = st.number_input(
+                            "Yükseklik",
+                            value=float(item.height or 0)
+                        )
 
                     with o4:
-                        weight = st.number_input("Ağırlık", value=float(item.weight or 0))
+                        weight = st.number_input(
+                            "Ağırlık",
+                            value=float(item.weight or 0)
+                        )
 
                     if st.form_submit_button("Düzenlemeyi Kaydet"):
                         item.recipient_name = recipient_name
