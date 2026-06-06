@@ -760,63 +760,25 @@ else:
                 st.markdown(status_html(status), unsafe_allow_html=True)
 
             with c6:
-                b1, b2, b3, b4 = st.columns([1, 1, 1, 1])
+    b1, b2, b3 = st.columns([1, 1, 1])
 
-                with b1:
-                    if st.button("Detay", key=f"detay_{item.id}", use_container_width=True):
-                        st.session_state[f"detay_{item.id}"] = not st.session_state.get(
-                            f"detay_{item.id}", False
-                        )
-                        st.rerun()
+    with b1:
+        if st.button("Seç", key=f"sec_btn_{item.id}", use_container_width=True):
+            st.session_state[f"sec_{item.id}"] = True
+            st.rerun()
 
-                with b2:
-                    if st.button("Seç", key=f"sec_btn_{item.id}", use_container_width=True):
-                        st.session_state[f"sec_{item.id}"] = True
-                        st.rerun()
+    with b2:
+        if st.button("Düzenle", key=f"duzenle_{item.id}", use_container_width=True):
+            st.session_state[f"edit_{item.id}"] = not st.session_state.get(
+                f"edit_{item.id}", False
+            )
+            st.rerun()
 
-                with b3:
-                    if st.button("Düzenle", key=f"duzenle_{item.id}", use_container_width=True):
-                        st.session_state[f"edit_{item.id}"] = not st.session_state.get(
-                            f"edit_{item.id}", False
-                        )
-                        st.rerun()
-
-                with b4:
-                    if st.button("Sil", key=f"sil_{item.id}", use_container_width=True):
-                        db.delete(item)
-                        db.commit()
-                        st.rerun()
-
-            if st.session_state.get(f"detay_{item.id}", False):
-                st.info(
-                    f"""
-Şube Kodu: {item.branch_code}
-
-Şube Adı: {item.branch_name}
-
-Adres: {item.address}
-
-İlçe: {item.district}
-
-İl: {item.city}
-
-Telefon: {item.phone}
-
-Ürün: {item.product_name}
-
-Takip No: {item.tracking_number}
-
-Oluşturan Kullanıcı: {item.created_by}
-
-En: {item.width}
-
-Boy: {item.length}
-
-Yükseklik: {item.height}
-
-Ağırlık: {item.weight}
-"""
-                )
+    with b3:
+        if st.button("Sil", key=f"sil_{item.id}", use_container_width=True):
+            db.delete(item)
+            db.commit()
+            st.rerun()
 
             if st.session_state.get(f"edit_{item.id}", False):
                 with st.form(f"edit_form_{item.id}"):
