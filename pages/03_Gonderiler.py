@@ -43,7 +43,45 @@ def ensure_columns():
 ensure_columns()
 
 db = SessionLocal()
+DEFAULT_SETTINGS = {
+    "sender_name": "Ziraat Katılım Bankası A.Ş. (Hadımköy Lojistik Merkezi)",
+    "sender_address_1": "Ömerli Mah. Nusret Cad. No:21 (2. Bodrum Kat)",
+    "sender_address_2": "Arnavutköy / İstanbul",
+    "acceptance_center_1": "Avrupa Yakası K.I.M",
+    "acceptance_center_2": "KAB.T: K.at.Zira",
+    "acceptance_center_3": "S.NO: 1",
+    "pdf_title": "PTT GENEL MÜDÜRLÜĞÜ KARGO ETİKETİ",
+    "pdf_permission_text": "***PTT GENEL MÜDÜRLÜĞÜ'NÜN 08/03/2011 VE 1918 SAYILI İZNİYLE BASILMIŞTIR.***",
+    "label_width_mm": "100",
+    "label_height_mm": "110",
+    "font_title": "13",
+    "font_permission": "6.2",
+    "font_sender_label": "6.5",
+    "font_sender_text": "6.5",
+    "font_recipient_label": "6.5",
+    "font_recipient_name": "10",
+    "font_address": "7.6",
+    "font_city": "9.5",
+    "font_box_label": "6",
+    "font_product": "8.5",
+    "font_barcode_text": "13",
+    "barcode_height_mm": "17",
+    "barcode_width": "0.68",
+}
 
+
+def get_setting(key):
+    item = db.query(Setting).filter(Setting.key == key).first()
+    if item:
+        return item.value
+    return DEFAULT_SETTINGS.get(key, "")
+
+
+def get_float_setting(key):
+    try:
+        return float(get_setting(key))
+    except Exception:
+        return float(DEFAULT_SETTINGS.get(key, 0))
 try:
     if os.path.exists("fonts/DejaVuSans.ttf"):
         pdfmetrics.registerFont(TTFont("DejaVu", "fonts/DejaVuSans.ttf"))
