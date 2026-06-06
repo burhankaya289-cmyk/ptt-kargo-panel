@@ -721,36 +721,69 @@ with tab1:
 
             else:
                 for index, item in enumerate(st.session_state.sepet):
-                    st.markdown(
-                        f"""
-                        <div class="cart-item">
-                            <div class="cart-item-title">
-                                {item['barcode']} | {item['recipient_name']}
-                            </div>
-                            <div class="cart-item-sub">
-                                {item['product_name']} |
-                                {item['width']}x{item['length']}x{item['height']} |
-                                {item['weight']} gr
-                            </div>
-                        </div>
-                        """,
-                        unsafe_allow_html=True
+
+    with st.container(border=True):
+
+        left_card, right_card = st.columns([5, 1.5])
+
+        with left_card:
+
+            st.markdown(
+                f"""
+                <div style="
+                    font-size:15px;
+                    font-weight:900;
+                    color:#0f172a;
+                    margin-bottom:6px;
+                ">
+                    {item['barcode']}
+                </div>
+
+                <div style="
+                    font-size:14px;
+                    font-weight:800;
+                    color:#0f172a;
+                    margin-bottom:6px;
+                ">
+                    {item['recipient_name']}
+                </div>
+
+                <div style="
+                    color:#64748b;
+                    font-size:12px;
+                ">
+                    {item['product_name']} ·
+                    {item['width']}x{item['length']}x{item['height']} cm ·
+                    {item['weight']} gr
+                </div>
+                """,
+                unsafe_allow_html=True
+            )
+
+        with right_card:
+
+            b1, b2 = st.columns(2)
+
+            with b1:
+                if st.button(
+                    "✏️",
+                    key=f"edit_{index}",
+                    use_container_width=True
+                ):
+                    st.session_state[f"edit_mode_{index}"] = not st.session_state.get(
+                        f"edit_mode_{index}",
+                        False
                     )
+                    st.rerun()
 
-                    c1, c2, c3 = st.columns([6, 1, 1])
-
-                    with c2:
-                        if st.button("Düzenle", key=f"edit_{index}"):
-                            st.session_state[f"edit_mode_{index}"] = not st.session_state.get(
-                                f"edit_mode_{index}",
-                                False
-                            )
-                            st.rerun()
-
-                    with c3:
-                        if st.button("Sil", key=f"delete_{index}"):
-                            st.session_state.sepet.pop(index)
-                            st.rerun()
+            with b2:
+                if st.button(
+                    "🗑️",
+                    key=f"delete_{index}",
+                    use_container_width=True
+                ):
+                    st.session_state.sepet.pop(index)
+                    st.rerun()
 
 with tab2:
     left_bulk, right_bulk = st.columns([1, 1.25], gap="large")
