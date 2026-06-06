@@ -326,11 +326,11 @@ if st.sidebar.button("↪ Çıkış"):
 
 pages = [
     st.Page("pages/08_Dashboard.py", title="Dashboard", icon="📊"),
-    st.Page("pages/02_Gonderi_Olustur.py", title="Gönderi Oluştur", icon="▥"),
-    st.Page("pages/03_Gonderiler.py", title="Oluşturulan Barkodlar", icon="☑"),
+    st.Page("pages/02_Gonderi_Olustur.py", title="Gönderi Oluştur", icon="📦"),
+    st.Page("pages/03_Gonderiler.py", title="Oluşturulan Barkodlar", icon="📋"),
     st.Page("pages/04_Subeler.py", title="Şubeler", icon="🏢"),
-    st.Page("pages/06_Barkodlar.py", title="Barkod Import", icon="⇧"),
-    st.Page("pages/05_Urun_Olculeri.py", title="Ürün Ölçüleri", icon="🏷"),
+    st.Page("pages/06_Barkodlar.py", title="Barkod Import", icon="🏷️"),
+    st.Page("pages/05_Urun_Olculeri.py", title="Ürün Ölçüleri", icon="📐"),
     st.Page("pages/12_Yedekleme.py", title="Yedekleme", icon="💾"),
 ]
 
