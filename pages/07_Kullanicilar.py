@@ -59,7 +59,7 @@ hr {
 </style>
 """, unsafe_allow_html=True)
 
-Base.metadata.create_all(bind=engine)
+
 
 st.title("Kullanıcılar")
 
