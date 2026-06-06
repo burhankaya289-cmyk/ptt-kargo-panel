@@ -703,12 +703,8 @@ else:
                     )
                     st.rerun()
 
-                     with d2:
-                if st.button(
-                    "Seç",
-                    key=f"pdf_sec_{item.id}",
-                    use_container_width=True
-                ):
+            with d2:
+                if st.button("Seç", key=f"pdf_sec_{item.id}", use_container_width=True):
                     st.session_state[f"sec_{item.id}"] = True
                     st.rerun()
 
