@@ -1,62 +1,106 @@
 import streamlit as st
-from utils.auth import require_login
 
-require_login()
+from utils.auth import require_login
 from database.database import SessionLocal, engine
 from database.models import Base, Branch, ProductDimension, Barcode, Shipment
 
-st.set_page_config(layout="wide", initial_sidebar_state="expanded")
+require_login()
+
+Base.metadata.create_all(bind=engine)
+
+db = SessionLocal()
 
 st.markdown("""
 <style>
-html, body, [class*="css"] {
-    font-size: 14px !important;
+.page-title {
+    font-size: 30px;
+    font-weight: 800;
+    color: #020617;
+    margin-bottom: 2px;
 }
-section[data-testid="stSidebar"] {
-    min-width: 230px !important;
-    max-width: 230px !important;
+.page-subtitle {
+    color: #64748b;
+    font-size: 14px;
+    margin-bottom: 24px;
 }
-button[kind="header"] {
-    display: none !important;
+.top-badge {
+    background: #dbeafe;
+    color: #1263d8;
+    padding: 10px 18px;
+    border-radius: 14px;
+    font-weight: 700;
+    font-size: 13px;
+    text-align: center;
+    float: right;
+}
+.card {
+    background: white;
+    border: 1px solid #dbe3ef;
+    border-radius: 18px;
+    padding: 22px;
+    box-shadow: 0 10px 26px rgba(15,23,42,0.04);
+    margin-bottom: 20px;
+}
+.card-title {
+    font-size: 16px;
+    font-weight: 800;
+    color: #0f172a;
+    margin-bottom: 16px;
+}
+.empty-box {
+    border: 2px dashed #dbe3ef;
+    border-radius: 16px;
+    min-height: 125px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #64748b;
+    font-size: 14px;
+}
+.cart-item {
+    border: 1px solid #e2e8f0;
+    border-radius: 14px;
+    padding: 12px 14px;
+    margin-bottom: 10px;
+    background: #f8fafc;
+}
+.cart-title {
+    font-weight: 800;
+    color: #0f172a;
+    font-size: 14px;
+}
+.cart-sub {
+    color: #64748b;
+    font-size: 12px;
 }
 .stButton button {
-    font-size: 13px !important;
-    padding: 0.35rem 0.6rem !important;
+    border-radius: 12px !important;
+    min-height: 42px !important;
+    font-weight: 800 !important;
 }
 .stTextInput input,
 .stTextArea textarea,
 .stNumberInput input,
 .stSelectbox div {
-    font-size: 13px !important;
-}
-div[data-testid="stMarkdownContainer"] p {
-    font-size: 13px !important;
-}
-h1 {
-    font-size: 26px !important;
-}
-h2, h3 {
-    font-size: 18px !important;
-}
-.cart-row {
-    font-size: 13px;
-    padding: 6px 0;
+    border-radius: 12px !important;
+    min-height: 42px !important;
 }
 </style>
 """, unsafe_allow_html=True)
 
-Base.metadata.create_all(bind=engine)
-
-st.title("Gönderi Oluştur")
-
-db = SessionLocal()
-
 if "sepet" not in st.session_state:
     st.session_state.sepet = []
+
+if "adet" not in st.session_state:
+    st.session_state.adet = 1
 
 
 def norm(value):
     return str(value or "").strip().lower()
+
+
+def temizle(value):
+    return str(value or "").strip()
 
 
 def get_available_barcodes(count):
@@ -65,6 +109,7 @@ def get_available_barcodes(count):
     barcodes = (
         db.query(Barcode)
         .filter(Barcode.is_used == False)
+        .order_by(Barcode.id.asc())
         .all()
     )
 
@@ -78,6 +123,24 @@ def get_available_barcodes(count):
             break
 
     return result
+
+
+def kalan_barkod_sayisi():
+    used_in_cart = [x["barcode"] for x in st.session_state.sepet]
+
+    barcodes = (
+        db.query(Barcode)
+        .filter(Barcode.is_used == False)
+        .all()
+    )
+
+    count = 0
+
+    for b in barcodes:
+        if b.barcode not in used_in_cart:
+            count += 1
+
+    return count
 
 
 def find_product_exact(product_name):
@@ -104,16 +167,18 @@ def product_suggestions(product_name):
     return result[:10]
 
 
-def branch_matches(code_text, name_text):
+def branch_matches(search_text):
     branches = db.query(Branch).all()
-    code_text = norm(code_text)
-    name_text = norm(name_text)
+    search_text = norm(search_text)
+
+    if not search_text:
+        return []
 
     result = []
 
     for b in branches:
-        code_match = code_text and norm(b.branch_code).startswith(code_text)
-        name_match = name_text and name_text in norm(b.branch_name)
+        code_match = norm(b.branch_code).startswith(search_text)
+        name_match = search_text in norm(b.branch_name)
 
         if code_match or name_match:
             result.append(b)
@@ -163,262 +228,274 @@ def save_cart():
     st.rerun()
 
 
-st.subheader("Şube / Alıcı Bilgileri")
-
-col1, col2 = st.columns(2)
-
-with col1:
-    branch_code_search = st.text_input("Şube Kodu")
-
-with col2:
-    branch_name_search = st.text_input("Şube Adı")
-
-manual_mode = norm(branch_code_search) == "0000"
-
-selected_branch = None
-
-if manual_mode:
-    st.info("0000 girildi. Manuel alıcı bilgisi doldurulacak.")
-else:
-    matches = branch_matches(branch_code_search, branch_name_search)
-
-    if matches:
-        options = [
-            f"{b.branch_code} - {b.branch_name}"
-            for b in matches
-        ]
-
-        selected_label = st.selectbox(
-            "Eşleşen Şubeler",
-            options
-        )
-
-        selected_index = options.index(selected_label)
-        selected_branch = matches[selected_index]
-
-        st.success(
-            f"Seçilen Şube: {selected_branch.branch_code} - {selected_branch.branch_name}"
-        )
-
-    elif branch_code_search or branch_name_search:
-        st.warning("Şube bulunamadı. Manuel bilgiyle devam edebilirsiniz.")
-
-if selected_branch:
-    default_branch_code = selected_branch.branch_code
-    default_branch_name = selected_branch.branch_name
-    default_recipient = selected_branch.branch_name
-    default_address = selected_branch.address or ""
-    default_district = selected_branch.district or ""
-    default_city = selected_branch.city or ""
-else:
-    default_branch_code = branch_code_search
-    default_branch_name = branch_name_search
-    default_recipient = branch_name_search
-    default_address = ""
-    default_district = ""
-    default_city = ""
-
-col1, col2 = st.columns(2)
-
-with col1:
-    recipient_name = st.text_input(
-        "Alıcı Adı",
-        value=default_recipient,
-        key=f"recipient_{default_branch_code}_{default_branch_name}"
-    )
-
-    recipient_phone = st.text_input("Telefon")
-
-with col2:
-    recipient_district = st.text_input(
-        "İlçe",
-        value=default_district,
-        key=f"district_{default_branch_code}_{default_branch_name}"
-    )
-
-    recipient_city = st.text_input(
-        "İl",
-        value=default_city,
-        key=f"city_{default_branch_code}_{default_branch_name}"
-    )
-
-recipient_address = st.text_area(
-    "Adres",
-    value=default_address,
-    key=f"address_{default_branch_code}_{default_branch_name}"
+st.markdown(
+    f"""
+    <div class="top-badge">
+        Havuzda {kalan_barkod_sayisi()} kullanılmamış barkod
+    </div>
+    <div class="page-title">Barkod Oluştur</div>
+    <div class="page-subtitle">Şubeye ürün gönderimi için barkod oluşturun.</div>
+    """,
+    unsafe_allow_html=True
 )
 
-st.divider()
+tab1, tab2 = st.tabs(["Tekli Gönderi", "Çoklu Gönderi"])
 
-st.subheader("Ürün Bilgileri")
+with tab2:
+    st.info("Çoklu gönderi ekranı daha sonra eklenecek.")
 
-product_name = st.text_input("Ürün İçeriği")
+with tab1:
 
-suggestions = product_suggestions(product_name)
+    left, right = st.columns([1, 2.25], gap="large")
 
-if suggestions:
-    selected_product = st.selectbox(
-        "Ürün Önerileri",
-        suggestions
-    )
+    with left:
 
-    if st.button("Öneriyi Kullan"):
-        product_name = selected_product
-        st.session_state["selected_product_from_suggestion"] = selected_product
-        st.rerun()
+        st.markdown('<div class="card">', unsafe_allow_html=True)
+        st.markdown('<div class="card-title">🏢 Alıcı (Şube)</div>', unsafe_allow_html=True)
 
-if "selected_product_from_suggestion" in st.session_state:
-    product_name = st.session_state["selected_product_from_suggestion"]
+        branch_search = st.text_input(
+            "Şube kodu veya adı yazın",
+            placeholder="Şube kodu veya adı yazın...",
+            label_visibility="collapsed"
+        )
 
-product = find_product_exact(product_name)
+        manual_mode = norm(branch_search) == "0000"
 
-if product:
-    default_width = float(product.width or 0)
-    default_length = float(product.length or 0)
-    default_height = float(product.height or 0)
-    default_weight = float(product.weight or 0)
+        selected_branch = None
 
-    st.success("Ürün ölçüsü bulundu.")
-else:
-    default_width = 0.0
-    default_length = 0.0
-    default_height = 0.0
-    default_weight = 0.0
+        if manual_mode:
+            st.info("0000 girildi. Manuel alıcı bilgisi doldurulacak.")
+        else:
+            matches = branch_matches(branch_search)
 
-col1, col2, col3, col4, col5 = st.columns(5)
+            if matches:
+                options = [
+                    f"{b.branch_code} - {b.branch_name}"
+                    for b in matches
+                ]
 
-with col1:
-    width = st.number_input(
-        "En",
-        min_value=0.0,
-        value=default_width,
-        step=1.0
-    )
+                selected_label = st.selectbox(
+                    "Eşleşen Şubeler",
+                    options
+                )
 
-with col2:
-    length = st.number_input(
-        "Boy",
-        min_value=0.0,
-        value=default_length,
-        step=1.0
-    )
+                selected_index = options.index(selected_label)
+                selected_branch = matches[selected_index]
 
-with col3:
-    height = st.number_input(
-        "Yükseklik",
-        min_value=0.0,
-        value=default_height,
-        step=1.0
-    )
+            elif branch_search:
+                st.warning("Şube bulunamadı. Manuel bilgiyle devam edebilirsiniz.")
 
-with col4:
-    weight = st.number_input(
-        "Ağırlık (gr)",
-        min_value=0.0,
-        value=default_weight,
-        step=1.0
-    )
+        if selected_branch:
+            default_branch_code = selected_branch.branch_code
+            default_branch_name = selected_branch.branch_name
+            default_recipient = selected_branch.branch_name
+            default_address = selected_branch.address or ""
+            default_district = selected_branch.district or ""
+            default_city = selected_branch.city or ""
+        else:
+            default_branch_code = branch_search
+            default_branch_name = branch_search
+            default_recipient = branch_search
+            default_address = ""
+            default_district = ""
+            default_city = ""
 
-with col5:
-    adet = st.number_input(
-        "Adet",
-        min_value=1,
-        value=1,
-        step=1
-    )
+        st.markdown('</div>', unsafe_allow_html=True)
 
-if st.button("Sepete Ekle", use_container_width=True):
+        st.markdown('<div class="card">', unsafe_allow_html=True)
+        st.markdown('<div class="card-title">Ürün Bilgileri</div>', unsafe_allow_html=True)
 
-    if not recipient_name.strip():
-        st.error("Alıcı adı boş olamaz.")
+        product_name = st.text_input(
+            "Ürün İçeriği (max 30)",
+            placeholder="Örn: Erkek T-Shirt M",
+            max_chars=30
+        )
 
-    elif not product_name.strip():
-        st.error("Ürün içeriği boş olamaz.")
+        suggestions = product_suggestions(product_name)
 
-    else:
-        available_barcodes = get_available_barcodes(int(adet))
+        if suggestions:
+            selected_product = st.selectbox(
+                "Ürün Önerileri",
+                suggestions
+            )
 
-        if len(available_barcodes) < int(adet):
-            st.error(
-                f"Yetersiz barkod. İstenen: {adet}, Kalan: {len(available_barcodes)}"
+            if st.button("Öneriyi Kullan", use_container_width=True):
+                st.session_state["selected_product_from_suggestion"] = selected_product
+                st.rerun()
+
+        if "selected_product_from_suggestion" in st.session_state:
+            product_name = st.session_state["selected_product_from_suggestion"]
+
+        product = find_product_exact(product_name)
+
+        if product:
+            default_width = float(product.width or 0)
+            default_length = float(product.length or 0)
+            default_height = float(product.height or 0)
+            default_weight = float(product.weight or 0)
+            st.success("Ürün ölçüsü bulundu.")
+        else:
+            default_width = 0.0
+            default_length = 0.0
+            default_height = 0.0
+            default_weight = 0.0
+
+        st.write("Adet")
+
+        a1, a2, a3 = st.columns([1, 5, 1])
+
+        with a1:
+            if st.button("−", use_container_width=True):
+                if st.session_state.adet > 1:
+                    st.session_state.adet -= 1
+                st.rerun()
+
+        with a2:
+            adet = st.number_input(
+                "Adet",
+                min_value=1,
+                value=int(st.session_state.adet),
+                step=1,
+                label_visibility="collapsed"
+            )
+            st.session_state.adet = int(adet)
+
+        with a3:
+            if st.button("+", use_container_width=True):
+                st.session_state.adet += 1
+                st.rerun()
+
+        m1, m2 = st.columns(2)
+
+        with m1:
+            width = st.number_input(
+                "En (Cm)",
+                min_value=0.0,
+                value=default_width,
+                step=1.0
+            )
+
+        with m2:
+            length = st.number_input(
+                "Boy (Cm)",
+                min_value=0.0,
+                value=default_length,
+                step=1.0
+            )
+
+        m3, m4 = st.columns(2)
+
+        with m3:
+            height = st.number_input(
+                "Yükseklik (Cm)",
+                min_value=0.0,
+                value=default_height,
+                step=1.0
+            )
+
+        with m4:
+            weight = st.number_input(
+                "Ağırlık (G)",
+                min_value=0.0,
+                value=default_weight,
+                step=1.0
+            )
+
+        if st.button("+  Kutu Ekle", use_container_width=True):
+
+            recipient_name = default_recipient
+            recipient_phone = ""
+            recipient_address = default_address
+            recipient_district = default_district
+            recipient_city = default_city
+
+            if not temizle(recipient_name):
+                st.error("Alıcı / Şube seçimi boş olamaz.")
+
+            elif not temizle(product_name):
+                st.error("Ürün içeriği boş olamaz.")
+
+            else:
+                available_barcodes = get_available_barcodes(int(adet))
+
+                if len(available_barcodes) < int(adet):
+                    st.error(
+                        f"Yetersiz barkod. İstenen: {adet}, Kalan: {len(available_barcodes)}"
+                    )
+
+                else:
+                    for barcode in available_barcodes:
+                        st.session_state.sepet.append(
+                            {
+                                "barcode": barcode.barcode,
+                                "tracking_number": barcode.barcode,
+                                "branch_code": default_branch_code,
+                                "branch_name": default_branch_name,
+                                "recipient_name": recipient_name,
+                                "address": recipient_address,
+                                "district": recipient_district,
+                                "city": recipient_city,
+                                "phone": recipient_phone,
+                                "product_name": product_name,
+                                "width": width,
+                                "length": length,
+                                "height": height,
+                                "weight": weight,
+                            }
+                        )
+
+                    if "selected_product_from_suggestion" in st.session_state:
+                        del st.session_state["selected_product_from_suggestion"]
+
+                    st.success(f"{adet} kutu eklendi.")
+                    st.rerun()
+
+        st.markdown('</div>', unsafe_allow_html=True)
+
+    with right:
+
+        st.markdown('<div class="card">', unsafe_allow_html=True)
+
+        h1, h2 = st.columns([3, 1])
+
+        with h1:
+            st.markdown(
+                f'<div class="card-title">📦 Eklenen Kutular ({len(st.session_state.sepet)})</div>',
+                unsafe_allow_html=True
+            )
+
+        with h2:
+            if st.button("💾 Tümünü Kaydet", use_container_width=True):
+                save_cart()
+
+        if not st.session_state.sepet:
+            st.markdown(
+                '<div class="empty-box">Henüz kutu eklenmedi.</div>',
+                unsafe_allow_html=True
             )
 
         else:
-            for barcode in available_barcodes:
-                st.session_state.sepet.append(
-                    {
-                        "barcode": barcode.barcode,
-                        "tracking_number": barcode.barcode,
-                        "branch_code": default_branch_code,
-                        "branch_name": default_branch_name,
-                        "recipient_name": recipient_name,
-                        "address": recipient_address,
-                        "district": recipient_district,
-                        "city": recipient_city,
-                        "phone": recipient_phone,
-                        "product_name": product_name,
-                        "width": width,
-                        "length": length,
-                        "height": height,
-                        "weight": weight,
-                    }
+            for index, item in enumerate(st.session_state.sepet):
+
+                st.markdown(
+                    f"""
+                    <div class="cart-item">
+                        <div class="cart-title">
+                            {item['barcode']} | {item['recipient_name']}
+                        </div>
+                        <div class="cart-sub">
+                            {item['product_name']} |
+                            {item['width']}x{item['length']}x{item['height']} |
+                            {item['weight']} gr
+                        </div>
+                    </div>
+                    """,
+                    unsafe_allow_html=True
                 )
 
-            if "selected_product_from_suggestion" in st.session_state:
-                del st.session_state["selected_product_from_suggestion"]
+                c1, c2, c3 = st.columns([5, 1, 1])
 
-            st.success(f"{adet} gönderi sepete eklendi.")
-            st.rerun()
-
-st.divider()
-
-top1, top2 = st.columns(2)
-
-with top1:
-    st.subheader(f"Sepet ({len(st.session_state.sepet)})")
-
-with top2:
-    if st.button("Gönderileri Kaydet", use_container_width=True):
-        save_cart()
-
-if not st.session_state.sepet:
-    st.info("Sepet boş.")
-
-else:
-    grouped = {}
-
-    for item in st.session_state.sepet:
-        key = item["recipient_name"] or "Alıcı Yok"
-
-        if key not in grouped:
-            grouped[key] = []
-
-        grouped[key].append(item)
-
-    for recipient, items in grouped.items():
-        with st.expander(
-            f"{recipient} ({len(items)} gönderi)",
-            expanded=True
-        ):
-            for item in items:
-                index = st.session_state.sepet.index(item)
-
-                col1, col2, col3 = st.columns([8, 1, 1])
-
-                with col1:
-                    st.markdown(
-                        f"""
-                        <div class="cart-row">
-                        <b>{item['barcode']}</b> |
-                        {item['product_name']} |
-                        {item['width']}x{item['length']}x{item['height']} |
-                        {item['weight']} gr
-                        </div>
-                        """,
-                        unsafe_allow_html=True
-                    )
-
-                with col2:
+                with c2:
                     if st.button("Düzenle", key=f"edit_{index}"):
                         st.session_state[f"edit_mode_{index}"] = not st.session_state.get(
                             f"edit_mode_{index}",
@@ -426,7 +503,7 @@ else:
                         )
                         st.rerun()
 
-                with col3:
+                with c3:
                     if st.button("Sil", key=f"delete_{index}"):
                         st.session_state.sepet.pop(index)
                         st.rerun()
@@ -439,27 +516,27 @@ else:
                             value=item["product_name"]
                         )
 
-                        c1, c2, c3, c4 = st.columns(4)
+                        e1, e2, e3, e4 = st.columns(4)
 
-                        with c1:
+                        with e1:
                             new_width = st.number_input(
                                 "En",
                                 value=float(item["width"])
                             )
 
-                        with c2:
+                        with e2:
                             new_length = st.number_input(
                                 "Boy",
                                 value=float(item["length"])
                             )
 
-                        with c3:
+                        with e3:
                             new_height = st.number_input(
                                 "Yükseklik",
                                 value=float(item["height"])
                             )
 
-                        with c4:
+                        with e4:
                             new_weight = st.number_input(
                                 "Ağırlık",
                                 value=float(item["weight"])
@@ -476,15 +553,17 @@ else:
                             st.session_state[f"edit_mode_{index}"] = False
                             st.rerun()
 
-    st.divider()
+            st.divider()
 
-    col1, col2 = st.columns(2)
+            t1, t2 = st.columns(2)
 
-    with col1:
-        if st.button("Sepeti Temizle", use_container_width=True):
-            st.session_state.sepet = []
-            st.rerun()
+            with t1:
+                if st.button("Sepeti Temizle", use_container_width=True):
+                    st.session_state.sepet = []
+                    st.rerun()
 
-    with col2:
-        if st.button("Gönderileri Kaydet ", use_container_width=True):
-            save_cart()
+            with t2:
+                if st.button("Gönderileri Kaydet", use_container_width=True):
+                    save_cart()
+
+        st.markdown('</div>', unsafe_allow_html=True)
