@@ -13,31 +13,63 @@ db = SessionLocal()
 st.markdown("""
 <style>
 .block-container {
-    padding-top: 1.5rem !important;
+    padding-top: 1.4rem !important;
+    padding-left: 1.6rem !important;
+    padding-right: 1.6rem !important;
+    max-width: 100% !important;
 }
 
 h1 {
     font-size: 30px !important;
     font-weight: 800 !important;
+    line-height: 1.1 !important;
+    margin: 0 !important;
+    padding: 0 !important;
 }
 
 h2, h3 {
     font-size: 17px !important;
+    font-weight: 800 !important;
 }
 
-.stButton button {
-    border-radius: 12px !important;
-    min-height: 40px !important;
-    font-weight: 700 !important;
+.page-header {
+    background: white;
+    border: 1px solid #dbe3ef;
+    border-radius: 18px;
+    padding: 22px 22px;
+    margin-bottom: 18px;
+    box-shadow: 0 8px 24px rgba(15,23,42,0.04);
 }
 
-.stTextInput input,
-.stTextArea textarea,
-.stNumberInput input,
-.stSelectbox div {
-    border-radius: 12px !important;
-    min-height: 40px !important;
-    font-size: 13px !important;
+.page-header-grid {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    align-items: center;
+    gap: 16px;
+}
+
+.page-title {
+    font-size: 30px;
+    font-weight: 800;
+    color: #020617;
+    line-height: 1.1;
+}
+
+.page-subtitle {
+    color: #64748b;
+    font-size: 13px;
+    margin-top: 10px;
+}
+
+.top-badge {
+    background: #dbeafe;
+    color: #1263d8;
+    padding: 11px 20px;
+    border-radius: 14px;
+    font-weight: 800;
+    font-size: 13px;
+    min-width: 260px;
+    text-align: center;
 }
 
 [data-testid="stVerticalBlockBorderWrapper"] {
@@ -47,9 +79,19 @@ h2, h3 {
     box-shadow: 0 8px 24px rgba(15,23,42,0.04) !important;
 }
 
-.small-muted {
-    color: #64748b;
-    font-size: 13px;
+.stButton button {
+    border-radius: 12px !important;
+    min-height: 40px !important;
+    font-weight: 800 !important;
+}
+
+.stTextInput input,
+.stTextArea textarea,
+.stNumberInput input,
+.stSelectbox div {
+    border-radius: 12px !important;
+    min-height: 40px !important;
+    font-size: 13px !important;
 }
 
 .cart-card {
@@ -82,16 +124,6 @@ h2, h3 {
     color: #64748b;
     font-size: 14px;
     background: #ffffff;
-}
-
-.top-badge {
-    background: #dbeafe;
-    color: #1263d8;
-    padding: 9px 16px;
-    border-radius: 14px;
-    font-weight: 800;
-    font-size: 13px;
-    text-align: center;
 }
 </style>
 """, unsafe_allow_html=True)
@@ -152,75 +184,64 @@ def get_available_barcodes(count):
     return result
 
 
-def branch_exact(search_text):
-    search_text = norm(search_text)
+def get_branch_options():
+    branches = (
+        db.query(Branch)
+        .order_by(Branch.branch_code.asc())
+        .all()
+    )
 
-    if not search_text:
-        return None
-
-    branches = db.query(Branch).all()
-
-    for b in branches:
-        if norm(b.branch_code) == search_text or norm(b.branch_name) == search_text:
-            return b
-
-    return None
-
-
-def branch_matches(search_text):
-    search_text = norm(search_text)
-
-    if not search_text:
-        return []
-
-    branches = db.query(Branch).order_by(Branch.branch_code.asc()).all()
-
-    result = []
+    options = [""]
 
     for b in branches:
-        code_match = norm(b.branch_code).startswith(search_text)
-        name_match = search_text in norm(b.branch_name)
+        options.append(
+            f"{b.branch_code} - {b.branch_name}"
+        )
 
-        if code_match or name_match:
-            result.append(b)
-
-    return result[:20]
+    return options, branches
 
 
-def find_product_exact(product_name):
-    product_name = norm(product_name)
-
-    if not product_name:
-        return None
-
-    products = db.query(ProductDimension).all()
-
-    for p in products:
-        if norm(p.product_name) == product_name:
-            return p
-
-    return None
-
-
-def product_suggestions(product_name):
-    product_name = norm(product_name)
-
-    if not product_name:
-        return []
-
+def get_product_options():
     products = (
         db.query(ProductDimension)
         .order_by(ProductDimension.product_name.asc())
         .all()
     )
 
-    result = []
+    options = [""]
 
     for p in products:
-        if product_name in norm(p.product_name):
-            result.append(p.product_name)
+        options.append(p.product_name)
 
-    return result[:15]
+    return options, products
+
+
+def branch_from_option(option, branches):
+    option = temizle(option)
+
+    if not option:
+        return None
+
+    for b in branches:
+        label = f"{b.branch_code} - {b.branch_name}"
+
+        if option == label:
+            return b
+
+    return None
+
+
+def product_from_option(option, products):
+    option = temizle(option)
+
+    if not option:
+        return None
+
+    for p in products:
+        if norm(p.product_name) == norm(option):
+            return p
+
+    return None
 
 
 def save_cart():
@@ -260,29 +281,27 @@ def save_cart():
             barcode.is_used = True
 
     db.commit()
-
     st.session_state.sepet = []
-
     st.success("Gönderiler kaydedildi.")
     st.rerun()
 
 
-top_left, top_right = st.columns([4, 1])
-
-with top_left:
-    st.title("Barkod Oluştur")
-    st.markdown(
-        '<div class="small-muted">Şubeye ürün gönderimi için barkod oluşturun.</div>',
-        unsafe_allow_html=True
-    )
-
-with top_right:
-    st.markdown(
-        f'<div class="top-badge">Havuzda {kalan_barkod_sayisi()} kullanılmamış barkod</div>',
-        unsafe_allow_html=True
-    )
-
-st.write("")
+st.markdown(
+    f"""
+    <div class="page-header">
+        <div class="page-header-grid">
+            <div>
+                <div class="page-title">Barkod Oluştur</div>
+                <div class="page-subtitle">Şubeye ürün gönderimi için barkod oluşturun.</div>
+            </div>
+            <div class="top-badge">
+                Havuzda {kalan_barkod_sayisi()} kullanılmamış barkod
+            </div>
+        </div>
+    </div>
+    """,
+    unsafe_allow_html=True
+)
 
 tab1, tab2 = st.tabs(["Tekli Gönderi", "Çoklu Gönderi"])
 
@@ -299,44 +318,19 @@ with tab1:
 
             st.subheader("Alıcı (Şube)")
 
-            branch_search = st.text_input(
+            branch_options, branches = get_branch_options()
+
+            selected_branch_label = st.selectbox(
                 "Şube kodu veya adı yazın",
+                branch_options,
+                index=0,
                 placeholder="Şube kodu veya adı yazın..."
             )
 
-            selected_branch = None
-
-            manual_mode = norm(branch_search) == "0000"
-
-            if manual_mode:
-                st.info("0000 girildi. Manuel alıcı bilgisi doldurulacak.")
-
-            else:
-                exact_branch = branch_exact(branch_search)
-
-                if exact_branch:
-                    selected_branch = exact_branch
-
-                else:
-                    matches = branch_matches(branch_search)
-
-                    if matches:
-                        options = [
-                            f"{b.branch_code} - {b.branch_name}"
-                            for b in matches
-                        ]
-
-                        selected_label = st.selectbox(
-                            "Şube",
-                            options,
-                            label_visibility="collapsed"
-                        )
-
-                        selected_index = options.index(selected_label)
-                        selected_branch = matches[selected_index]
-
-                    elif branch_search:
-                        st.warning("Şube bulunamadı. Manuel bilgiyle devam edebilirsiniz.")
+            selected_branch = branch_from_option(
+                selected_branch_label,
+                branches
+            )
 
             if selected_branch:
                 default_branch_code = selected_branch.branch_code
@@ -346,9 +340,9 @@ with tab1:
                 default_district = selected_branch.district or ""
                 default_city = selected_branch.city or ""
             else:
-                default_branch_code = branch_search
-                default_branch_name = branch_search
-                default_recipient = branch_search
+                default_branch_code = ""
+                default_branch_name = ""
+                default_recipient = ""
                 default_address = ""
                 default_district = ""
                 default_city = ""
@@ -357,40 +351,29 @@ with tab1:
 
             st.subheader("Ürün Bilgileri")
 
-            product_name_input = st.text_input(
+            product_options, products = get_product_options()
+
+            selected_product_label = st.selectbox(
                 "Ürün İçeriği (max 30)",
-                placeholder="Örn: Erkek T-Shirt M",
-                max_chars=30
+                product_options,
+                index=0,
+                placeholder="Ürün içeriği yazın..."
             )
 
-            product_name = product_name_input
-
-            exact_product = find_product_exact(product_name_input)
-
-            if exact_product:
-                product_name = exact_product.product_name
-
-            else:
-                suggestions = product_suggestions(product_name_input)
-
-                if suggestions:
-                    selected_product = st.selectbox(
-                        "Ürün",
-                        suggestions,
-                        label_visibility="collapsed"
-                    )
-
-                    product_name = selected_product
-
-            product = find_product_exact(product_name)
+            product = product_from_option(
+                selected_product_label,
+                products
+            )
 
             if product:
+                product_name = product.product_name
                 default_width = float(product.width or 0)
                 default_length = float(product.length or 0)
                 default_height = float(product.height or 0)
                 default_weight = float(product.weight or 0)
                 st.success("Ürün ölçüsü bulundu.")
             else:
+                product_name = selected_product_label
                 default_width = 0.0
                 default_length = 0.0
                 default_height = 0.0
@@ -460,13 +443,7 @@ with tab1:
 
             if st.button("+  Kutu Ekle", use_container_width=True):
 
-                recipient_name = default_recipient
-                recipient_phone = ""
-                recipient_address = default_address
-                recipient_district = default_district
-                recipient_city = default_city
-
-                if not temizle(recipient_name):
+                if not selected_branch:
                     st.error("Alıcı / Şube seçimi boş olamaz.")
 
                 elif not temizle(product_name):
@@ -488,11 +465,11 @@ with tab1:
                                     "tracking_number": barcode.barcode,
                                     "branch_code": default_branch_code,
                                     "branch_name": default_branch_name,
-                                    "recipient_name": recipient_name,
-                                    "address": recipient_address,
-                                    "district": recipient_district,
-                                    "city": recipient_city,
-                                    "phone": recipient_phone,
+                                    "recipient_name": default_recipient,
+                                    "address": default_address,
+                                    "district": default_district,
+                                    "city": default_city,
+                                    "phone": "",
                                     "product_name": product_name,
                                     "width": width,
                                     "length": length,
