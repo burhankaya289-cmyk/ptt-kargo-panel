@@ -1,8 +1,5 @@
 import streamlit as st
 import pandas as pd
-from utils.auth import require_login
-
-require_login()
 from io import BytesIO
 from datetime import datetime
 
@@ -10,10 +7,11 @@ from reportlab.lib.units import mm
 from reportlab.pdfgen import canvas
 from reportlab.graphics.barcode import code128
 
+from utils.auth import require_login
 from database.database import SessionLocal, engine
 from database.models import Base, Shipment
 
-st.set_page_config(layout="wide", initial_sidebar_state="expanded")
+require_login()
 
 st.markdown("""
 <style>
@@ -55,10 +53,6 @@ button {
 .stNumberInput input,
 .stSelectbox div {
     font-size: 12px !important;
-}
-div[data-testid="stMarkdownContainer"] p {
-    font-size: 12px !important;
-    margin-bottom: 0.2rem !important;
 }
 .status-red {
     background:#ffe8e8;
@@ -103,8 +97,6 @@ if "pdf_name" not in st.session_state:
 
 def kisalt(text, limit):
     text = str(text or "")
-    if len(text) <= limit:
-        return text
     return text[:limit]
 
 
@@ -142,142 +134,185 @@ def create_excel(shipments):
     return output
 
 
-def draw_wrapped(c, text, x, y, max_chars, max_lines, font="Helvetica", size=3.5, line_gap=3.2):
+def draw_wrapped(c, text, x, y, max_chars, max_lines, font="Helvetica", size=8, gap=9):
     text = str(text or "").strip()
+    words = text.split()
     lines = []
+    line = ""
 
-    while text:
-        lines.append(text[:max_chars])
-        text = text[max_chars:]
+    for word in words:
+        test = f"{line} {word}".strip()
+        if len(test) <= max_chars:
+            line = test
+        else:
+            if line:
+                lines.append(line)
+            line = word
+
+    if line:
+        lines.append(line)
 
     c.setFont(font, size)
 
     for line in lines[:max_lines]:
         c.drawString(x, y, line)
-        y -= line_gap * mm
+        y -= gap
 
 
 def create_pdf(shipments):
     output = BytesIO()
 
-    page_width = 40 * mm
-    page_height = 50 * mm
+    page_width = 100 * mm
+    page_height = 110 * mm
 
     c = canvas.Canvas(output, pagesize=(page_width, page_height))
 
     for item in shipments:
-        c.setLineWidth(0.35)
+        c.setLineWidth(0.8)
 
-        c.rect(1 * mm, 1 * mm, 38 * mm, 48 * mm)
+        # DIŞ ÇERÇEVE
+        c.rect(4 * mm, 4 * mm, 92 * mm, 102 * mm)
 
-        c.setFont("Helvetica-Bold", 4.8)
+        # BAŞLIK
+        c.setFont("Helvetica-Bold", 14)
+        c.drawCentredString(50 * mm, 101 * mm, "PTT GENEL MÜDÜRLÜĞÜ KARGO ETİKETİ")
+
+        c.setFont("Helvetica-Bold", 6.8)
         c.drawCentredString(
-            20 * mm,
-            47.2 * mm,
-            "PTT GENEL MÜDÜRLÜĞÜ KARGO ETİKETİ"
+            50 * mm,
+            96.5 * mm,
+            "***PTT GENEL MÜDÜRLÜĞÜ'NÜN 08/03/2011 VE 1918 SAYILI İZNİYLE BASILMIŞTIR.***"
         )
 
-        c.rect(1 * mm, 39.5 * mm, 25 * mm, 6.8 * mm)
-        c.rect(26 * mm, 39.5 * mm, 13 * mm, 6.8 * mm)
+        c.line(4 * mm, 93 * mm, 96 * mm, 93 * mm)
 
-        c.setFont("Helvetica-Bold", 3.4)
-        c.drawString(2 * mm, 44.4 * mm, "GÖNDERİCİ")
-        c.setFont("Helvetica", 3.15)
-        c.drawString(2 * mm, 42.6 * mm, "Ziraat Katılım Bankası A.Ş.")
-        c.drawString(2 * mm, 40.9 * mm, "Hadımköy Lojistik Merkezi")
+        # GÖNDERİCİ / KABUL MERKEZİ
+        c.rect(4 * mm, 77 * mm, 64 * mm, 16 * mm)
+        c.rect(68 * mm, 77 * mm, 28 * mm, 16 * mm)
 
-        c.setFont("Helvetica-Bold", 3.4)
-        c.drawString(27 * mm, 44.2 * mm, "PTT KABUL")
-        c.drawString(27 * mm, 42.2 * mm, "MERKEZİ")
+        c.setFont("Helvetica-Bold", 7)
+        c.drawString(6 * mm, 90 * mm, "GÖNDERİCİ")
 
-        c.rect(1 * mm, 27 * mm, 38 * mm, 12.5 * mm)
+        c.setFont("Helvetica", 7.2)
+        c.drawString(6 * mm, 86.5 * mm, "Ziraat Katılım Bankası A.Ş. (Hadımköy Lojistik Merkezi)")
+        c.drawString(6 * mm, 83 * mm, "Ömerli Mah. Nusret Cad. No:21 (2. Bodrum Kat)")
+        c.drawString(6 * mm, 79.5 * mm, "Arnavutköy / İstanbul")
 
-        c.setFont("Helvetica-Bold", 3.5)
-        c.drawString(2 * mm, 37.6 * mm, "ALICI")
+        c.setFont("Helvetica-Bold", 7)
+        c.drawString(70 * mm, 90 * mm, "KAB. MRKZ")
+
+        c.setFont("Helvetica", 7.2)
+        c.drawString(70 * mm, 86.5 * mm, "Avrupa Yakası K.I.M")
+        c.drawString(70 * mm, 83 * mm, "KAB.T: K.at.Zira")
+        c.drawString(70 * mm, 79.5 * mm, "S.NO: 1")
+
+        # ALICI BLOĞU
+        c.rect(4 * mm, 50 * mm, 92 * mm, 27 * mm)
+
+        c.setFont("Helvetica-Bold", 7)
+        c.drawString(6 * mm, 73.5 * mm, "ALICI")
 
         draw_wrapped(
             c,
             item.recipient_name,
-            2 * mm,
-            35.7 * mm,
-            max_chars=34,
-            max_lines=1,
+            6 * mm,
+            69.5 * mm,
+            max_chars=46,
+            max_lines=2,
             font="Helvetica-Bold",
-            size=3.8,
-            line_gap=2.8
+            size=10.5,
+            gap=10
         )
 
         draw_wrapped(
             c,
             item.address,
-            2 * mm,
-            33.2 * mm,
-            max_chars=42,
+            6 * mm,
+            61 * mm,
+            max_chars=62,
             max_lines=2,
-            font="Helvetica",
-            size=3.2,
-            line_gap=2.6
+            font="Helvetica-Bold",
+            size=8.2,
+            gap=8
         )
 
-        c.setFont("Helvetica", 3.2)
+        c.setFont("Helvetica-Bold", 10)
         c.drawString(
-            2 * mm,
-            28.1 * mm,
-            kisalt(f"{item.district or ''} / {item.city or ''}", 42)
+            6 * mm,
+            52.5 * mm,
+            kisalt(f"{item.district or ''} / {item.city or ''}", 45)
         )
 
-        box_y = 21.8 * mm
-        box_h = 5.2 * mm
-        box_w = 9.5 * mm
+        # TARİH / EBAT / AĞIRLIK / ŞUBE
+        c.rect(4 * mm, 39 * mm, 23 * mm, 11 * mm)
+        c.rect(27 * mm, 39 * mm, 28 * mm, 11 * mm)
+        c.rect(55 * mm, 39 * mm, 23 * mm, 11 * mm)
+        c.rect(78 * mm, 39 * mm, 18 * mm, 11 * mm)
 
-        titles = ["TARİH", "ÖLÇÜ", "AĞIRLIK", "ŞUBE"]
-        values = [
-            datetime.now().strftime("%d.%m.%Y"),
-            f"{item.width}x{item.length}x{item.height}",
-            f"{item.weight} gr",
-            item.branch_code or "",
-        ]
+        c.setFont("Helvetica-Bold", 6.5)
+        c.drawString(6 * mm, 47 * mm, "TARİH")
+        c.drawString(29 * mm, 47 * mm, "EBAT/DESİ")
+        c.drawString(57 * mm, 47 * mm, "AĞIRLIK (GR)")
+        c.drawString(80 * mm, 47 * mm, "ŞUBE KODU")
 
-        for i in range(4):
-            x = 1 * mm + i * box_w
-            c.rect(x, box_y, box_w, box_h)
-            c.setFont("Helvetica-Bold", 2.9)
-            c.drawCentredString(x + (box_w / 2), box_y + 3.5 * mm, titles[i])
-            c.setFont("Helvetica", 2.8)
-            c.drawCentredString(x + (box_w / 2), box_y + 1.2 * mm, kisalt(values[i], 11))
+        c.setFont("Helvetica-Bold", 10)
+        c.drawCentredString(15.5 * mm, 42 * mm, datetime.now().strftime("%d.%m.%Y"))
 
-        c.rect(1 * mm, 15.8 * mm, 38 * mm, 6 * mm)
-        c.setFont("Helvetica-Bold", 3.5)
-        c.drawString(2 * mm, 19.8 * mm, "ÜRÜN İÇERİĞİ")
-        c.setFont("Helvetica", 3.8)
-        c.drawString(2 * mm, 17.4 * mm, kisalt(item.product_name, 38))
+        c.setFont("Helvetica-Bold", 7)
+        c.drawCentredString(
+            41 * mm,
+            43.2 * mm,
+            f"{item.width}x{item.length}x{item.height}"
+        )
+        c.drawCentredString(41 * mm, 40.3 * mm, "(Ds:1)")
 
-        c.rect(1 * mm, 1 * mm, 38 * mm, 14.8 * mm)
+        c.setFont("Helvetica-Bold", 11)
+        c.drawCentredString(66.5 * mm, 42 * mm, str(int(item.weight or 0)))
+
+        c.setFont("Helvetica-Bold", 10)
+        c.drawCentredString(87 * mm, 42 * mm, str(item.branch_code or ""))
+
+        # ÜRÜN / EK HİZMET / BEYAN
+        c.rect(4 * mm, 27 * mm, 56 * mm, 12 * mm)
+        c.rect(60 * mm, 27 * mm, 18 * mm, 12 * mm)
+        c.rect(78 * mm, 27 * mm, 18 * mm, 12 * mm)
+
+        c.setFont("Helvetica-Bold", 6.5)
+        c.drawString(6 * mm, 36 * mm, "ÜRÜN İÇERİĞİ")
+        c.drawString(62 * mm, 36 * mm, "EK HİZMETLER")
+        c.drawString(80 * mm, 36 * mm, "BEYAN DEĞERİ")
+
+        c.setFont("Helvetica-Bold", 9)
+        c.drawString(6 * mm, 31.5 * mm, kisalt(item.product_name, 34))
+
+        c.setFont("Helvetica", 9)
+        c.drawCentredString(69 * mm, 31.5 * mm, "-")
+        c.drawCentredString(87 * mm, 31.5 * mm, "-")
+
+        # BARKOD BLOĞU
+        c.rect(4 * mm, 4 * mm, 92 * mm, 23 * mm)
 
         barcode_value = str(item.tracking_number or item.barcode or "")
 
         barcode = code128.Code128(
             barcode_value,
-            barHeight=7.2 * mm,
-            barWidth=0.31
+            barHeight=15 * mm,
+            barWidth=0.58
         )
 
-        barcode.drawOn(c, 4.2 * mm, 6.2 * mm)
+        barcode.drawOn(c, 22 * mm, 9 * mm)
 
-        c.setFont("Helvetica-Bold", 4.7)
-        c.drawCentredString(
-            20 * mm,
-            3.2 * mm,
-            barcode_value
-        )
+        c.setFont("Helvetica-Bold", 14)
+        c.drawCentredString(50 * mm, 5.5 * mm, barcode_value)
 
         item.is_printed = True
+
         c.showPage()
 
     db.commit()
     c.save()
-    output.seek(0)
 
+    output.seek(0)
     return output
 
 
