@@ -152,6 +152,21 @@ def get_available_barcodes(count):
     return result
 
 
+def branch_exact(search_text):
+    search_text = norm(search_text)
+
+    if not search_text:
+        return None
+
+    branches = db.query(Branch).all()
+
+    for b in branches:
+        if norm(b.branch_code) == search_text or norm(b.branch_name) == search_text:
+            return b
+
+    return None
+
+
 def branch_matches(search_text):
     search_text = norm(search_text)
 
@@ -173,25 +188,36 @@ def branch_matches(search_text):
 
 
 def find_product_exact(product_name):
+    product_name = norm(product_name)
+
+    if not product_name:
+        return None
+
     products = db.query(ProductDimension).all()
 
     for p in products:
-        if norm(p.product_name) == norm(product_name):
+        if norm(p.product_name) == product_name:
             return p
 
     return None
 
 
 def product_suggestions(product_name):
+    product_name = norm(product_name)
+
     if not product_name:
         return []
 
-    products = db.query(ProductDimension).order_by(ProductDimension.product_name.asc()).all()
+    products = (
+        db.query(ProductDimension)
+        .order_by(ProductDimension.product_name.asc())
+        .all()
+    )
 
     result = []
 
     for p in products:
-        if norm(product_name) in norm(p.product_name):
+        if product_name in norm(p.product_name):
             result.append(p.product_name)
 
     return result[:15]
@@ -286,24 +312,31 @@ with tab1:
                 st.info("0000 girildi. Manuel alıcı bilgisi doldurulacak.")
 
             else:
-                matches = branch_matches(branch_search)
+                exact_branch = branch_exact(branch_search)
 
-                if matches:
-                    options = [
-                        f"{b.branch_code} - {b.branch_name}"
-                        for b in matches
-                    ]
+                if exact_branch:
+                    selected_branch = exact_branch
 
-                    selected_label = st.selectbox(
-                        "Eşleşen Şubeler",
-                        options
-                    )
+                else:
+                    matches = branch_matches(branch_search)
 
-                    selected_index = options.index(selected_label)
-                    selected_branch = matches[selected_index]
+                    if matches:
+                        options = [
+                            f"{b.branch_code} - {b.branch_name}"
+                            for b in matches
+                        ]
 
-                elif branch_search:
-                    st.warning("Şube bulunamadı. Manuel bilgiyle devam edebilirsiniz.")
+                        selected_label = st.selectbox(
+                            "Şube",
+                            options,
+                            label_visibility="collapsed"
+                        )
+
+                        selected_index = options.index(selected_label)
+                        selected_branch = matches[selected_index]
+
+                    elif branch_search:
+                        st.warning("Şube bulunamadı. Manuel bilgiyle devam edebilirsiniz.")
 
             if selected_branch:
                 default_branch_code = selected_branch.branch_code
@@ -324,26 +357,30 @@ with tab1:
 
             st.subheader("Ürün Bilgileri")
 
-            product_name = st.text_input(
+            product_name_input = st.text_input(
                 "Ürün İçeriği (max 30)",
                 placeholder="Örn: Erkek T-Shirt M",
                 max_chars=30
             )
 
-            suggestions = product_suggestions(product_name)
+            product_name = product_name_input
 
-            if suggestions:
-                selected_product = st.selectbox(
-                    "Ürün Önerileri",
-                    suggestions
-                )
+            exact_product = find_product_exact(product_name_input)
 
-                if st.button("Öneriyi Kullan", use_container_width=True):
-                    st.session_state["selected_product_from_suggestion"] = selected_product
-                    st.rerun()
+            if exact_product:
+                product_name = exact_product.product_name
 
-            if "selected_product_from_suggestion" in st.session_state:
-                product_name = st.session_state["selected_product_from_suggestion"]
+            else:
+                suggestions = product_suggestions(product_name_input)
+
+                if suggestions:
+                    selected_product = st.selectbox(
+                        "Ürün",
+                        suggestions,
+                        label_visibility="collapsed"
+                    )
+
+                    product_name = selected_product
 
             product = find_product_exact(product_name)
 
@@ -463,9 +500,6 @@ with tab1:
                                     "weight": weight,
                                 }
                             )
-
-                        if "selected_product_from_suggestion" in st.session_state:
-                            del st.session_state["selected_product_from_suggestion"]
 
                         st.success(f"{adet} kutu eklendi.")
                         st.rerun()
