@@ -191,6 +191,37 @@ hr {
     padding: 26px;
     box-shadow: 0 12px 35px rgba(15,23,42,0.06);
 }
+header[data-testid="stHeader"]{
+    display:none !important;
+}
+
+[data-testid="stToolbar"]{
+    display:none !important;
+}
+
+[data-testid="stDecoration"]{
+    display:none !important;
+}
+
+.stAppDeployButton{
+    display:none !important;
+}
+
+button[title="View source on GitHub"]{
+    display:none !important;
+}
+
+button[title="Edit app"]{
+    display:none !important;
+}
+
+#MainMenu{
+    visibility:hidden;
+}
+
+footer{
+    visibility:hidden;
+}
 </style>
 """, unsafe_allow_html=True)
 
