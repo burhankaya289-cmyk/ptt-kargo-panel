@@ -2,6 +2,8 @@ import pandas as pd
 import streamlit as st
 from io import BytesIO
 
+from sqlalchemy import func
+
 from utils.auth import require_login
 from database.database import SessionLocal, engine
 from database.models import Base, Branch, ProductDimension, Barcode, Shipment
@@ -225,15 +227,79 @@ def adet_sayi(value):
         return 1
 
 
+@st.cache_data(ttl=600, show_spinner=False)
+def cached_branches():
+    temp_db = SessionLocal()
+
+    try:
+        rows = (
+            temp_db.query(Branch)
+            .order_by(Branch.branch_code.asc())
+            .all()
+        )
+
+        return [
+            {
+                "id": x.id,
+                "branch_code": x.branch_code or "",
+                "branch_name": x.branch_name or "",
+                "address": x.address or "",
+                "district": x.district or "",
+                "city": x.city or "",
+            }
+            for x in rows
+        ]
+
+    finally:
+        temp_db.close()
+
+
+@st.cache_data(ttl=600, show_spinner=False)
+def cached_products():
+    temp_db = SessionLocal()
+
+    try:
+        rows = (
+            temp_db.query(ProductDimension)
+            .order_by(ProductDimension.product_name.asc())
+            .all()
+        )
+
+        return [
+            {
+                "id": x.id,
+                "product_name": x.product_name or "",
+                "width": float(x.width or 0),
+                "length": float(x.length or 0),
+                "height": float(x.height or 0),
+                "weight": float(x.weight or 0),
+            }
+            for x in rows
+        ]
+
+    finally:
+        temp_db.close()
+
+
+@st.cache_data(ttl=20, show_spinner=False)
+def cached_unused_barcode_count():
+    temp_db = SessionLocal()
+
+    try:
+        return (
+            temp_db.query(func.count(Barcode.id))
+            .filter(Barcode.is_used == False)
+            .scalar()
+            or 0
+        )
+
+    finally:
+        temp_db.close()
+
+
 def kalan_barkod_sayisi():
-    used_in_cart = [x["barcode"] for x in st.session_state.sepet]
-
-    query = db.query(Barcode).filter(Barcode.is_used == False)
-
-    if used_in_cart:
-        query = query.filter(Barcode.barcode.notin_(used_in_cart))
-
-    return query.count()
+    used_in_cart = len(st.session_state.sepet)
+    return max(cached_unused_barcode_count() - used_in_cart, 0)
 
 
 def get_available_barcodes(count):
@@ -251,56 +317,90 @@ def get_available_barcodes(count):
     return query.limit(count).all()
 
 
-def find_branch(search_text):
-    search_raw = temizle(search_text)
-
-    if not search_raw:
+def dict_to_branch(data):
+    if not data:
         return None
 
-    exact = (
-        db.query(Branch)
-        .filter(
-            (Branch.branch_code == search_raw)
-            | (Branch.branch_name.ilike(search_raw))
-        )
-        .first()
-    )
+    class BranchResult:
+        pass
 
-    if exact:
-        return exact
+    item = BranchResult()
+    item.id = data.get("id")
+    item.branch_code = data.get("branch_code", "")
+    item.branch_name = data.get("branch_name", "")
+    item.address = data.get("address", "")
+    item.district = data.get("district", "")
+    item.city = data.get("city", "")
 
-    return (
-        db.query(Branch)
-        .filter(
-            (Branch.branch_code.ilike(f"{search_raw}%"))
-            | (Branch.branch_name.ilike(f"%{search_raw}%"))
-        )
-        .order_by(Branch.branch_code.asc())
-        .first()
-    )
+    return item
+
+
+def dict_to_product(data):
+    if not data:
+        return None
+
+    class ProductResult:
+        pass
+
+    item = ProductResult()
+    item.id = data.get("id")
+    item.product_name = data.get("product_name", "")
+    item.width = data.get("width", 0)
+    item.length = data.get("length", 0)
+    item.height = data.get("height", 0)
+    item.weight = data.get("weight", 0)
+
+    return item
+
+
+def find_branch(search_text):
+    search = norm(search_text)
+
+    if not search:
+        return None
+
+    branches = cached_branches()
+
+    for b in branches:
+        full_label = f"{b['branch_code']} - {b['branch_name']}"
+
+        if (
+            norm(b["branch_code"]) == search
+            or norm(b["branch_name"]) == search
+            or norm(full_label) == search
+        ):
+            return dict_to_branch(b)
+
+    for b in branches:
+        full_label = f"{b['branch_code']} - {b['branch_name']}"
+
+        if (
+            norm(b["branch_code"]).startswith(search)
+            or search in norm(b["branch_name"])
+            or search in norm(full_label)
+        ):
+            return dict_to_branch(b)
+
+    return None
 
 
 def find_product(search_text):
-    search_raw = temizle(search_text)
+    search = norm(search_text)
 
-    if not search_raw:
+    if not search:
         return None
 
-    exact = (
-        db.query(ProductDimension)
-        .filter(ProductDimension.product_name.ilike(search_raw))
-        .first()
-    )
+    products = cached_products()
 
-    if exact:
-        return exact
+    for p in products:
+        if norm(p["product_name"]) == search:
+            return dict_to_product(p)
 
-    return (
-        db.query(ProductDimension)
-        .filter(ProductDimension.product_name.ilike(f"%{search_raw}%"))
-        .order_by(ProductDimension.product_name.asc())
-        .first()
-    )
+    for p in products:
+        if search in norm(p["product_name"]):
+            return dict_to_product(p)
+
+    return None
 
 
 def save_cart():
@@ -341,6 +441,7 @@ def save_cart():
         )
 
     db.commit()
+    cached_unused_barcode_count.clear()
     st.session_state.sepet = []
     st.success("Gönderiler kaydedildi.")
     st.rerun()
@@ -509,6 +610,7 @@ def create_bulk_shipments(df):
 
     if created > 0:
         db.commit()
+        cached_unused_barcode_count.clear()
 
     return created, errors
 
