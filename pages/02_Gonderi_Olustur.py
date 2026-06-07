@@ -225,103 +225,82 @@ def adet_sayi(value):
         return 1
 
 
-def all_branches():
-    return db.query(Branch).order_by(Branch.branch_code.asc()).all()
-
-
-def all_products():
-    return db.query(ProductDimension).order_by(ProductDimension.product_name.asc()).all()
-
-
 def kalan_barkod_sayisi():
     used_in_cart = [x["barcode"] for x in st.session_state.sepet]
 
-    barcodes = (
-        db.query(Barcode)
-        .filter(Barcode.is_used == False)
-        .order_by(Barcode.id.asc())
-        .all()
-    )
+    query = db.query(Barcode).filter(Barcode.is_used == False)
 
-    count = 0
+    if used_in_cart:
+        query = query.filter(Barcode.barcode.notin_(used_in_cart))
 
-    for b in barcodes:
-        if b.barcode not in used_in_cart:
-            count += 1
-
-    return count
+    return query.count()
 
 
 def get_available_barcodes(count):
     used_in_cart = [x["barcode"] for x in st.session_state.sepet]
 
-    barcodes = (
+    query = (
         db.query(Barcode)
         .filter(Barcode.is_used == False)
         .order_by(Barcode.id.asc())
-        .all()
     )
 
-    result = []
+    if used_in_cart:
+        query = query.filter(Barcode.barcode.notin_(used_in_cart))
 
-    for b in barcodes:
-        if b.barcode not in used_in_cart:
-            result.append(b)
-
-        if len(result) == count:
-            break
-
-    return result
+    return query.limit(count).all()
 
 
 def find_branch(search_text):
-    search = norm(search_text)
+    search_raw = temizle(search_text)
 
-    if not search:
+    if not search_raw:
         return None
 
-    branches = all_branches()
+    exact = (
+        db.query(Branch)
+        .filter(
+            (Branch.branch_code == search_raw)
+            | (Branch.branch_name.ilike(search_raw))
+        )
+        .first()
+    )
 
-    for b in branches:
-        full_label = f"{b.branch_code} - {b.branch_name}"
+    if exact:
+        return exact
 
-        if (
-            norm(b.branch_code) == search
-            or norm(b.branch_name) == search
-            or norm(full_label) == search
-        ):
-            return b
-
-    for b in branches:
-        full_label = f"{b.branch_code} - {b.branch_name}"
-
-        if (
-            norm(b.branch_code).startswith(search)
-            or search in norm(b.branch_name)
-            or search in norm(full_label)
-        ):
-            return b
-
-    return None
+    return (
+        db.query(Branch)
+        .filter(
+            (Branch.branch_code.ilike(f"{search_raw}%"))
+            | (Branch.branch_name.ilike(f"%{search_raw}%"))
+        )
+        .order_by(Branch.branch_code.asc())
+        .first()
+    )
 
 
 def find_product(search_text):
-    search = norm(search_text)
+    search_raw = temizle(search_text)
 
-    if not search:
+    if not search_raw:
         return None
 
-    products = all_products()
+    exact = (
+        db.query(ProductDimension)
+        .filter(ProductDimension.product_name.ilike(search_raw))
+        .first()
+    )
 
-    for p in products:
-        if norm(p.product_name) == search:
-            return p
+    if exact:
+        return exact
 
-    for p in products:
-        if search in norm(p.product_name):
-            return p
-
-    return None
+    return (
+        db.query(ProductDimension)
+        .filter(ProductDimension.product_name.ilike(f"%{search_raw}%"))
+        .order_by(ProductDimension.product_name.asc())
+        .first()
+    )
 
 
 def save_cart():
@@ -352,14 +331,14 @@ def save_cart():
 
         db.add(shipment)
 
-        barcode = (
-            db.query(Barcode)
-            .filter(Barcode.barcode == item["barcode"])
-            .first()
-        )
+    cart_barcodes = [item["barcode"] for item in st.session_state.sepet]
 
-        if barcode:
-            barcode.is_used = True
+    if cart_barcodes:
+        (
+            db.query(Barcode)
+            .filter(Barcode.barcode.in_(cart_barcodes))
+            .update({Barcode.is_used: True}, synchronize_session=False)
+        )
 
     db.commit()
     st.session_state.sepet = []
